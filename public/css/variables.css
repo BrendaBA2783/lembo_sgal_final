@@ -1,0 +1,78 @@
+/* Base Styles */
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+:root {
+    /* Verde principal */
+    --primary-green: #2e7d32;
+    --primary-green-light: #60ad5e;
+    --primary-green-dark: #005005;
+
+    /* Naranja secundario */
+    --secondary-orange: #ff8f00;
+    --secondary-orange-light: #ffc046;
+    --secondary-orange-dark: #c56000;
+
+    /* Fondos */
+    --background-light-gray: #f5f7f9;
+
+    /* Textos */
+    --text-dark-gray: #333333;
+    --text-light-gray: #666666;
+    --white: #ffffff;
+
+    /* Estados */
+    --success-green: #43a047;
+    --warning-orange: #ffa000;
+    --error-red: #e53935;
+
+    /* 🎨 Colores de estado activo */
+    --status-active-bg: rgba(46, 204, 113, 0.12);
+    --status-active-color: #27ae60;
+    --status-active-border: rgba(46, 204, 113, 0.3);
+    --status-active-dot: #2ecc71;
+    --status-active-shadow: rgba(46, 204, 113, 0.2);
+
+    /* 🎨 Colores de estado inactivo */
+    --status-inactive-bg: rgba(231, 76, 60, 0.12);
+    --status-inactive-color: #c0392b;
+    --status-inactive-border: rgba(231, 76, 60, 0.3);
+    --status-inactive-dot: #e74c3c;
+    --status-inactive-shadow: rgba(231, 76, 60, 0.2);
+
+    /* Alertas - Éxito */
+    --alert-success-bg: #4caf50;
+    --alert-success-border: #2e7d32;
+
+    /* Alertas - Error */
+    --alert-error-bg: #f44336;
+    --alert-error-border: #d32f2f;
+
+    /* Alertas - Advertencia */
+    --alert-warning-bg: #ff9800;
+    --alert-warning-border: #f57c00;
+
+    /* Alertas - Información */
+    --alert-info-bg: #2196f3;
+    --alert-info-border: #1976d2;
+
+    /* Sombras */
+    --shadow: rgba(0, 0, 0, 0.1);
+
+    /* Bordes */
+    --border-radius: 0.25rem; /* 4px */
+
+    /* Espaciados */
+    --spacing-xs: 0.25rem; /* 4px */
+    --spacing-sm: 0.5rem;  /* 8px */
+    --spacing-md: 1rem;    /* 16px */
+    --spacing-lg: 1.5rem;  /* 24px */
+    --spacing-xl: 2rem;    /* 32px */
+
+    /* Letra */
+    --font-family: 'Work Sans', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}

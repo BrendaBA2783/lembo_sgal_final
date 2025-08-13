@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+
+# environment
+.env
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# built files
+/dist
+/build
+
+# misc
+.DS_Store
+.vscode
+.idea
+
+# uploaded files
+/public/uploads/*
+!/public/uploads/.gitkeep
+/public/uploads/sensores/*
+!/public/uploads/sensores/.gitkeep
+/public/uploads/cultivos/*
+!/public/uploads/cultivos/.gitkeep

@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Cultivos</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+		<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title">Gestión de Cultivos</h2>
+					<div class="section__actions">
+						<button id="newCultivoBtn" class="btn btn--primary">
+							Nuevo Cultivo
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+				</div>
+
+				<div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input
+								type="text"
+								id="searchInput"
+								class="form__input"
+								placeholder="Buscar por nombre o ID..."
+							/>
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<select id="filterType" class="form__select">
+								<option value="">Todos los tipos</option>
+								<option value="Hortaliza">Hortaliza</option>
+								<option value="Fruta">Fruta</option>
+								<option value="Cereal">Cereal</option>
+								<option value="Legumbre">Legumbre</option>
+								<option value="Otro">Otro</option>
+							</select>
+						</div>
+						<button id="applyFilterBtn" class="btn btn--primary">
+							Aplicar Filtros
+						</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="cultivosList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Tipo</th>
+								<th>Tamaño</th>
+								<th>Ubicación</th>
+								<th>Fecha Siembra</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="cultivosTableBody">
+							<!-- Los datos de cultivos se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+				</div>
+
+				<div id="pagination" class="pagination">
+					<!-- La paginación se generará dinámicamente -->
+				</div>
+			</div>
+
+			<!-- Modal para crear/editar cultivo -->
+			<div id="cultivoModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 id="modalTitle" class="modal__title">Nuevo Cultivo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="cultivoForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group">
+									<label for="tipo" class="form__label">Tipo de Cultivo *</label>
+									<select id="tipo" name="tipo" class="form__select" required>
+										<option value="">Seleccione un tipo</option>
+										<option value="Hortaliza">Hortaliza</option>
+										<option value="Fruta">Fruta</option>
+										<option value="Cereal">Cereal</option>
+										<option value="Legumbre">Legumbre</option>
+										<option value="Otro">Otro</option>
+									</select>
+								</div>
+								<div class="form__group">
+									<label for="nombre" class="form__label">Nombre del Cultivo *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="tamano" class="form__label">Tamaño *</label>
+									<input type="text" id="tamano" name="tamano" class="form__input" placeholder="Ej: 100m²" required />
+								</div>
+								<div class="form__group">
+									<label for="ubicacion" class="form__label">Ubicación *</label>
+									<input type="text" id="ubicacion" name="ubicacion" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="fecha_siembra" class="form__label">Fecha de Siembra *</label>
+									<input type="date" id="fecha_siembra" name="fecha_siembra" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="estado" class="form__label">Estado</label>
+									<select id="estado" name="estado" class="form__select">
+										<option value="activo">Activo</option>
+										<option value="inactivo">Inactivo</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="descripcion" class="form__label">Descripción *</label>
+									<textarea id="descripcion" name="descripcion" class="form__textarea" required></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar cultivo -->
+			<div id="viewCultivoModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles del Cultivo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="cultivoDetails">
+						<!-- Los detalles del cultivo se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de cultivo -->
+			<div id="cultivoReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Cultivos</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label"
+									>Filtrar por Estado</label
+								>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Cultivos: <span id="totalCultivos">0</span></p>
+								<p>Cultivos Activos: <span id="cultivosActivos">0</span></p>
+								<p>Cultivos Inactivos: <span id="cultivosInactivos">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				cultivos: `${API_BASE_URL}/cultivos`,
+				sensores: `${API_BASE_URL}/sensores`,
+				insumos: `${API_BASE_URL}/insumos`,
+			};
+
+			// Update apiRequest function to handle CORS properly
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							// Add CORS headers
+							Accept: "application/json",
+						},
+						// Change credentials mode
+						credentials: "same-origin", // or remove this line if not using cookies
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					const data = await response.json();
+					return data;
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentCultivo = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredCultivos = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			// Display cultivos with pagination
+			function displayCultivos(page) {
+				const cultivosTableBody = document.getElementById("cultivosTableBody");
+				// Clear table
+				cultivosTableBody.innerHTML = "";
+
+				// Calculate start and end index for current page
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedCultivos = filteredCultivos.slice(startIndex, endIndex);
+
+				if (paginatedCultivos.length === 0) {
+					cultivosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">No se encontraron cultivos</td>
+          </tr>
+        `;
+					return;
+				}
+
+				// Add cultivos to table
+				paginatedCultivos.forEach((cultivo) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+          <td class="table__cell">${cultivo.id_cultivo}</td>
+          <td class="table__cell">${cultivo.nombre}</td>
+          <td class="table__cell">${cultivo.tipo}</td>
+          <td class="table__cell">${cultivo.tamano}</td>
+          <td class="table__cell">${cultivo.ubicacion}</td>
+          <td class="table__cell">${formatDate(cultivo.fecha_siembra)}</td>
+          <td class="table__cell">
+            <span class="status ${
+							cultivo.estado === "activo"
+								? "status--active"
+								: "status--inactive"
+						}">
+              ${cultivo.estado}
+            </span>
+          </td>
+          <td class="table__cell table__actions">
+            <button class="action-btn action-btn--view" data-id="${cultivo.id_cultivo}" title="Ver detalles">
+              <span class="material-icons">visibility</span>
+            </button>
+            <button class="action-btn action-btn--edit" data-id="${cultivo.id_cultivo}" title="Editar cultivo">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="action-btn ${cultivo.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+                    data-id="${cultivo.id_cultivo}"
+                    title="${cultivo.estado === "activo" ? "Deshabilitar" : "Habilitar"} cultivo">
+              <span class="material-icons">${cultivo.estado === "activo" ? "block" : "check_circle"}</span>
+            </button>
+          </td>
+        `;
+					cultivosTableBody.appendChild(row);
+				});
+
+				// Add event listeners for action buttons
+				addActionButtonListeners();
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(
+					".action-btn--enable, .action-btn--disable"
+				);
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						viewCultivo(button.getAttribute("data-id"))
+					);
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						editCultivo(button.getAttribute("data-id"))
+					);
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						toggleCultivoStatus(button.getAttribute("data-id"))
+					);
+				});
+			}
+
+			async function toggleCultivoStatus(id) {
+				try {
+					const cultivo = await apiRequest(`${API_ENDPOINTS.cultivos}/${id}`);
+					const newStatus = cultivo.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.cultivos}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({ estado: newStatus }),
+					});
+
+					showAlert(
+						`Cultivo ${
+							newStatus === "activo" ? "habilitado" : "deshabilitado"
+						} exitosamente`,
+						"success"
+					);
+					loadCultivos();
+				} catch (error) {
+					console.error("Error toggling cultivo status:", error);
+					showAlert("Error al cambiar estado del cultivo", "error");
+				}
+			}
+
+			// Update loadCultivos to use setupPagination from global scope
+			async function loadCultivos() {
+				try {
+					const cultivos = await apiRequest(API_ENDPOINTS.cultivos);
+
+					if (!Array.isArray(cultivos)) {
+						throw new Error("Formato de respuesta inválido");
+					}
+
+					filteredCultivos = [...cultivos];
+					currentPage = 1;
+					displayCultivos(currentPage);
+					setupPagination(filteredCultivos.length);
+				} catch (error) {
+					console.error("Error loading cultivos:", error);
+					const cultivosTableBody =
+						document.getElementById("cultivosTableBody");
+					const pagination = document.getElementById("pagination");
+
+					cultivosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">
+              Error al cargar los cultivos: ${error.message}
+            </td>
+          </tr>
+        `;
+					pagination.innerHTML = "";
+				}
+			}
+
+			// Move setupPagination to global scope
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${
+					currentPage === 1 ? "pagination__btn--disabled" : ""
+				}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displayCultivos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${
+						i === currentPage ? "pagination__btn--active" : ""
+					}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displayCultivos(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${
+					currentPage === totalPages ? "pagination__btn--disabled" : ""
+				}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displayCultivos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Estado global y funciones principales
+			// Funciones CRUD
+			async function getCultivos() {
+				return apiRequest(API_ENDPOINTS.cultivos);
+			}
+
+			async function createCultivo(cultivoData) {
+				return apiRequest(API_ENDPOINTS.cultivos, {
+					method: "POST",
+					body: JSON.stringify(cultivoData),
+				});
+			}
+
+			async function updateCultivo(id, cultivoData) {
+				return apiRequest(`${API_ENDPOINTS.cultivos}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(cultivoData),
+				});
+			}
+
+			async function deleteCultivoById(id) {
+				return apiRequest(`${API_ENDPOINTS.cultivos}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleCultivoFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+					const fecha_siembra = formData.get("fecha_siembra");
+
+					// Validate required fields
+					if (
+						!formData.get("nombre") ||
+						!formData.get("tipo") ||
+						!fecha_siembra
+					) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					// Create cultivo data object matching database schema
+					const cultivoData = {
+						tipo: formData.get("tipo"),
+						nombre: formData.get("nombre"),
+						tamano: formData.get("tamano"),
+						ubicacion: formData.get("ubicacion"),
+						fecha_siembra: fecha_siembra,
+						descripcion: formData.get("descripcion") || "",
+						estado: formData.get("estado") || "activo",
+					};
+
+					// Determine if this is a create or update operation
+					const isUpdate = currentCultivo !== null;
+					const method = isUpdate ? "PUT" : "POST";
+					const url = isUpdate
+						? `${API_ENDPOINTS.cultivos}/${currentCultivo.id_cultivo}`
+						: API_ENDPOINTS.cultivos;
+
+					const response = await fetch(url, {
+						method: method,
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						body: JSON.stringify(cultivoData),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(
+							errorData.message ||
+								`Error al ${isUpdate ? "actualizar" : "crear"} cultivo`
+						);
+					}
+
+					const data = await response.json();
+					closeModal(cultivoModal);
+					showAlert(
+						`Cultivo ${isUpdate ? "actualizado" : "creado"} exitosamente`,
+						"success"
+					);
+					loadCultivos();
+
+					// Reset currentCultivo after operation
+					currentCultivo = null;
+					// Reset form submit handler
+					e.target.onsubmit = handleCultivoFormSubmit;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			// Función para mostrar alertas
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			// Add viewCultivo function at global scope
+			async function viewCultivo(id) {
+				try {
+					const cultivo = await apiRequest(`${API_ENDPOINTS.cultivos}/${id}`);
+					const cultivoDetails = document.getElementById("cultivoDetails");
+
+					cultivoDetails.innerHTML = `
+      <div class="entity-details">
+        <div class="entity-details__info">
+          <div class="entity-details__group">
+            <label>ID del Cultivo:</label>
+            <p>${cultivo.id_cultivo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Nombre:</label>
+            <p>${cultivo.nombre}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Tipo:</label>
+            <p>${cultivo.tipo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Tamaño:</label>
+            <p>${cultivo.tamano}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Ubicación:</label>
+            <p>${cultivo.ubicacion}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha de Siembra:</label>
+            <p>${formatDate(cultivo.fecha_siembra)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Estado:</label>
+            <p class="status ${cultivo.estado === "activo" ? "status--active" : "status--inactive"}">
+              ${cultivo.estado}
+            </p>
+          </div>
+          <div class="entity-details__group">
+            <label>Descripción:</label>
+            <p>${cultivo.descripcion}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha de Creación:</label>
+            <p>${formatDate(cultivo.created_at)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Última Actualización:</label>
+            <p>${formatDate(cultivo.updated_at)}</p>
+          </div>
+        </div>
+      </div>
+      <div class="entity-details__actions">
+        <button class="btn" onclick="closeModal(viewCultivoModal)">Cerrar</button>
+        <button class="btn btn--primary" onclick="editCultivo('${cultivo.id_cultivo}')">Editar</button>
+      </div>
+    `;
+
+					document.getElementById("viewCultivoModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing cultivo:", error);
+					showAlert("Error al cargar detalles del cultivo", "error");
+				}
+			}
+
+			// Add editCultivo function before initCultivosPage
+			async function editCultivo(id) {
+				try {
+					const cultivo = await apiRequest(`${API_ENDPOINTS.cultivos}/${id}`);
+					currentCultivo = cultivo;
+
+					// Update modal title
+					modalTitle.textContent = "Editar Cultivo";
+
+					// Fill form with cultivo data
+					document.getElementById("tipo").value = cultivo.tipo;
+					document.getElementById("nombre").value = cultivo.nombre;
+					document.getElementById("tamano").value = cultivo.tamano;
+					document.getElementById("ubicacion").value = cultivo.ubicacion;
+					document.getElementById("fecha_siembra").value =
+						cultivo.fecha_siembra.split("T")[0];
+					document.getElementById("descripcion").value =
+						cultivo.descripcion || "";
+					document.getElementById("estado").value = cultivo.estado;
+
+					// Show modal
+					cultivoModal.classList.add("modal--open");
+
+					// Update form submit handler for edit
+					const cultivoForm = document.getElementById("cultivoForm");
+					cultivoForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(cultivoForm);
+							const updatedData = {
+								tipo: formData.get("tipo"),
+								nombre: formData.get("nombre"),
+								tamano: formData.get("tamano"),
+								ubicacion: formData.get("ubicacion"),
+								fecha_siembra: formData.get("fecha_siembra"),
+								descripcion: formData.get("descripcion"),
+								estado: formData.get("estado"),
+							};
+
+							await apiRequest(`${API_ENDPOINTS.cultivos}/${id}`, {
+								method: "PUT",
+								body: JSON.stringify(updatedData),
+							});
+
+							closeModal(cultivoModal);
+							showAlert("Cultivo actualizado exitosamente", "success");
+							loadCultivos();
+						} catch (error) {
+							console.error("Error updating cultivo:", error);
+							showAlert("Error al actualizar cultivo", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading cultivo for edit:", error);
+					showAlert("Error al cargar datos del cultivo", "error");
+				}
+			}
+
+			// Update report data generation
+			async function generateCultivoReport() {
+				const statusFilter =
+					document.getElementById("reportStatusSelect").value;
+
+				try {
+					const cultivos = await apiRequest(API_ENDPOINTS.cultivos);
+
+					const filteredData = statusFilter
+						? cultivos.filter((item) => item.estado === statusFilter)
+						: cultivos;
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure without sensores and insumos
+					reportData = filteredData.map((item) => ({
+						id_cultivo: item.id_cultivo,
+						nombre: item.nombre,
+						tipo: item.tipo,
+						tamano: item.tamano,
+						ubicacion: item.ubicacion,
+						fecha_siembra: formatDate(item.fecha_siembra),
+						estado: item.estado,
+					}));
+
+					// Update summary
+					const totalCultivos = reportData.length;
+					const cultivosActivos = reportData.filter(
+						(item) => item.estado === "activo"
+					).length;
+					const cultivosInactivos = totalCultivos - cultivosActivos;
+
+					document.getElementById("totalCultivos").textContent = totalCultivos;
+					document.getElementById("cultivosActivos").textContent =
+						cultivosActivos;
+					document.getElementById("cultivosInactivos").textContent =
+						cultivosInactivos;
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating cultivo report:", error);
+					showAlert("Error al generar reporte de cultivos", "error");
+				}
+			}
+
+			// Update Excel export columns
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map((item) => ({
+						ID: item.id_cultivo,
+						Nombre: item.nombre,
+						Tipo: item.tipo,
+						Tamaño: item.tamano,
+						Ubicación: item.ubicacion,
+						"Fecha Siembra": item.fecha_siembra,
+						Estado: item.estado,
+					}));
+
+					if (exportToExcel(data, "Reporte_Cultivos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Update PDF export columns
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id_cultivo" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Tipo", key: "tipo" },
+						{ header: "Tamaño", key: "tamano" },
+						{ header: "Ubicación", key: "ubicacion" },
+						{ header: "Fecha Siembra", key: "fecha_siembra" },
+						{ header: "Estado", key: "estado" },
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Cultivos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initCultivosPage();
+			});
+
+			function initCultivosPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterType = document.getElementById("filterType");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newCultivoBtn = document.getElementById("newCultivoBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements
+				const cultivoModal = document.getElementById("cultivoModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const cultivoForm = document.getElementById("cultivoForm");
+				const modalClose = cultivoModal.querySelector(".modal__close");
+				const modalCancel = cultivoModal.querySelector(".modal__cancel");
+
+				const viewCultivoModal = document.getElementById("viewCultivoModal");
+				const viewModalClose = viewCultivoModal.querySelector(".modal__close");
+
+				const cultivoReportModal =
+					document.getElementById("cultivoReportModal");
+				const reportModalClose =
+					cultivoReportModal.querySelector(".modal__close");
+
+				// Load cultivos on page initialization
+				loadCultivos();
+
+				// Event listeners
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				newCultivoBtn.addEventListener("click", openNewCultivoModal);
+				generateReportBtn.addEventListener("click", openReportModal);
+
+				// Modal event listeners
+				modalClose.addEventListener("click", () => closeModal(cultivoModal));
+				modalCancel.addEventListener("click", () => closeModal(cultivoModal));
+				viewModalClose.addEventListener("click", () =>
+					closeModal(viewCultivoModal)
+				);
+				reportModalClose.addEventListener("click", () =>
+					closeModal(cultivoReportModal)
+				);
+
+				// Form submission
+				cultivoForm.addEventListener("submit", handleCultivoFormSubmit);
+
+				// Apply filters
+				function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const typeFilter = filterType.value;
+
+					apiRequest(API_ENDPOINTS.cultivos)
+						.then((cultivos) => {
+							filteredCultivos = cultivos.filter((cultivo) => {
+								const matchesSearch =
+									searchTerm === "" ||
+									cultivo.nombre.toLowerCase().includes(searchTerm) ||
+									cultivo.id_cultivo.toLowerCase().includes(searchTerm);
+
+								const matchesStatus =
+									statusFilter === "" || cultivo.estado === statusFilter;
+								const matchesType =
+									typeFilter === "" || cultivo.tipo === typeFilter;
+
+								return matchesSearch && matchesStatus && matchesType;
+							});
+
+							currentPage = 1;
+							displayCultivos(currentPage);
+							setupPagination(filteredCultivos.length);
+						})
+						.catch((error) => {
+							console.error("Error applying filters:", error);
+							showAlert("Error al aplicar filtros", "error");
+						});
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterType.value = "";
+
+					loadCultivos();
+				}
+
+				// Open modal for new cultivo
+				function openNewCultivoModal() {
+					currentCultivo = null;
+					modalTitle.textContent = "Nuevo Cultivo";
+					cultivoForm.reset();
+
+					// Set default values
+					document.getElementById("estado").value = "activo";
+					document.getElementById("fecha_siembra").valueAsDate = new Date();
+
+					// Reset form submit handler
+					cultivoForm.onsubmit = handleCultivoFormSubmit;
+
+					cultivoModal.classList.add("modal--open");
+				}
+
+				// Open report modal
+				function openReportModal() {
+					// Show modal
+					cultivoReportModal.classList.add("modal--open");
+
+					// Set event listeners for report generation
+					document
+						.getElementById("generateReportDataBtn")
+						.addEventListener("click", generateCultivoReport);
+					document
+						.getElementById("exportExcelBtn")
+						.addEventListener("click", exportReportToExcel);
+					document
+						.getElementById("exportPdfBtn")
+						.addEventListener("click", exportReportToPdf);
+				}
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Usuarios</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title">Gestión de Usuarios</h2>
+					<div class="section__actions">
+						<div class="section__actions">
+						<button id="newUserBtn" class="btn btn--primary">
+							Nuevo Usuario
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+					</div>
+				</div>
+
+				 <div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input type="text" id="searchInput" class="form__input" placeholder="Buscar por nombre o correo..." />
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<select id="filterRole" class="form__select">
+								<option value="">Todos los roles</option>
+								<option value="admin">Administrador</option>
+								<option value="user">Usuario</option>
+							</select>
+						</div>
+						<button id="applyFilterBtn" class="btn btn--primary">Aplicar Filtros</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="usuariosList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Email</th>
+								<th>Rol</th>
+								<th>Estado</th>
+								<th>Fecha Creación</th>
+								<th>Última Actualización</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="usuariosTableBody">
+							<!-- Los datos se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+					<div id="pagination" class="pagination">
+						<!-- La paginación se generará dinámicamente -->
+					</div>
+				</div>
+
+				<!-- Modal para crear/editar usuario -->
+				<div id="userModal" class="modal">
+					<div class="modal__content">
+						<div class="modal__header">
+							<h3 id="modalTitle" class="modal__title">Nuevo Usuario</h3>
+							<span class="modal__close">&times;</span>
+						</div>
+						<div class="modal__body">
+							<form id="userForm" class="form form--grid">
+								<div class="form__row">
+									<div class="form__group">
+										<label for="nombre" class="form__label">Nombre *</label>
+										<input type="text" id="nombre" name="nombre" class="form__input" required />
+									</div>
+									<div class="form__group">
+										<label for="correo" class="form__label">Correo *</label>
+										<input type="email" id="correo" name="correo" class="form__input" required />
+									</div>
+								</div>
+								<div class="form__row">
+									<div class="form__group">
+										<label for="password" class="form__label">Contraseña *</label>
+										<input type="password" id="password" name="password" class="form__input" required />
+									</div>
+									<div class="form__group">
+										<label for="rol" class="form__label">Rol *</label>
+										<select id="rol" name="rol" class="form__select" required>
+											<option value="">Seleccione un rol</option>
+											<option value="admin">Administrador</option>
+											<option value="usuario">Usuario</option>
+										</select>
+									</div>
+									<div class="form__group">
+										<label for="estado" class="form__label">Estado</label>
+										<select id="estado" name="estado" class="form__select">
+											<option value="activo">Activo</option>
+											<option value="inactivo">Inactivo</option>
+										</select>
+									</div>
+								</div>
+								<div class="form__actions">
+									<button type="button" class="btn modal__cancel">Cancelar</button>
+									<button type="submit" class="btn btn--primary">Guardar</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar usuario -->
+			<div id="viewUserModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles del Usuario</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="usuarioDetails">
+						<!-- Los detalles del usuario se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de usuario -->
+			<div id="userReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Usuarios</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportRoleSelect" class="form__label">Filtrar por Rol</label>
+								<select id="reportRoleSelect" class="form__select">
+									<option value="">Todos los roles</option>
+									<option value="admin">Administrador</option>
+									<option value="user">Usuario</option>
+								</select>
+							</div>
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label">Filtrar por Estado</label>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Usuarios: <span id="totalUsuarios">0</span></p>
+								<p>Usuarios Activos: <span id="usuariosActivos">0</span></p>
+								<p>Usuarios Inactivos: <span id="usuariosInactivos">0</span></p>
+								<p>Administradores: <span id="totalAdmins">0</span></p>
+								<p>Usuarios Regulares: <span id="totalRegulares">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				usuarios: `${API_BASE_URL}/usuarios`,
+			};
+
+			 // Utility function to make API requests
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						credentials: "same-origin",
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					return await response.json();
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentUsuario = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredUsuarios = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			 // Estado global y funciones principales
+			async function getUsuarios() {
+				return apiRequest(API_ENDPOINTS.usuarios);
+			}
+
+			async function createUsuario(usuarioData) {
+				return apiRequest(API_ENDPOINTS.usuarios, {
+					method: "POST",
+					body: JSON.stringify(usuarioData),
+				});
+			}
+
+			async function updateUsuario(id, usuarioData) {
+				return apiRequest(`${API_ENDPOINTS.usuarios}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(usuarioData),
+				});
+			}
+
+			async function deleteUsuarioById(id) {
+				return apiRequest(`${API_ENDPOINTS.usuarios}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleUsuarioFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+
+					if (!formData.get("nombre") || !formData.get("correo") || !formData.get("rol")) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					const isUpdate = currentUsuario !== null;
+					const usuarioData = {
+						nombre: formData.get("nombre"),
+						email: formData.get("correo"),
+						role: formData.get("rol"),
+						estado: formData.get("estado") || "activo"
+					};
+
+					// Add password only for new users
+					if (!isUpdate) {
+						if (!formData.get("password")) {
+							throw new Error("La contraseña es requerida");
+						}
+						usuarioData.password = formData.get("password");
+					}
+
+					await apiRequest(
+						isUpdate ? `${API_ENDPOINTS.usuarios}/${currentUsuario.id}` : API_ENDPOINTS.usuarios,
+						{
+							method: isUpdate ? "PUT" : "POST",
+							body: JSON.stringify(usuarioData),
+						}
+					);
+
+					closeModal(userModal);
+					showAlert(`Usuario ${isUpdate ? "actualizado" : "creado"} exitosamente`, "success");
+					loadUsuarios();
+					currentUsuario = null;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			async function viewUsuario(id) {
+				try {
+					const usuario = await apiRequest(`${API_ENDPOINTS.usuarios}/${id}`);
+					const usuarioDetails = document.getElementById("usuarioDetails");
+
+					usuarioDetails.innerHTML = `
+						<div class="entity-details">
+							<div class="entity-details__info">
+								<div class="entity-details__group">
+									<label>ID:</label>
+									<p>${usuario.id}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Nombre:</label>
+									<p>${usuario.nombre}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Email:</label>
+									<p>${usuario.email}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Teléfono:</label>
+									<p>${usuario.telefono || 'No especificado'}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Rol:</label>
+									<p>${usuario.role}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Estado:</label>
+									<p class="status ${usuario.estado === "activo" ? "status--active" : "status--inactive"}">
+										${usuario.estado}
+									</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Fecha de Creación:</label>
+									<p>${formatDate(usuario.created_at)}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Última Actualización:</label>
+									<p>${formatDate(usuario.updated_at)}</p>
+								</div>
+							</div>
+						</div>
+						<div class="entity-details__actions">
+							<button class="btn" onclick="closeModal(viewUserModal)">Cerrar</button>
+							<button class="btn btn--primary" onclick="editUsuario('${usuario.id}')">Editar</button>
+						</div>
+					`;
+
+					document.getElementById("viewUserModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing usuario:", error);
+					showAlert("Error al cargar detalles del usuario", "error");
+				}
+			}
+
+			async function editUsuario(id) {
+				try {
+					const usuario = await apiRequest(`${API_ENDPOINTS.usuarios}/${id}`);
+					currentUsuario = usuario;
+
+					modalTitle.textContent = "Editar Usuario";
+
+					// Fill form with usuario data using database column names
+					document.getElementById("nombre").value = usuario.nombre;
+					document.getElementById("correo").value = usuario.email;   // DB field is 'email'
+					document.getElementById("rol").value = usuario.role;       // DB field is 'role'
+					document.getElementById("estado").value = usuario.estado;
+
+					userModal.classList.add("modal--open");
+
+					const userForm = document.getElementById("userForm");
+					userForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(userForm);
+							// Create object with correct database column names
+							const updatedData = {
+								nombre: formData.get("nombre"),
+								email: formData.get("correo"),    // Map 'correo' form field to 'email' DB column
+								role: formData.get("rol"),        // Map 'rol' form field to 'role' DB column
+								estado: formData.get("estado")
+							};
+
+							await apiRequest(`${API_ENDPOINTS.usuarios}/${id}`, {
+								method: "PUT",
+								headers: {
+									"Content-Type": "application/json"
+								},
+								body: JSON.stringify(updatedData)
+							});
+
+							closeModal(userModal);
+							showAlert("Usuario actualizado exitosamente", "success");
+							loadUsuarios();
+							currentUsuario = null;
+						} catch (error) {
+							console.error("Error updating usuario:", error);
+							showAlert("Error al actualizar usuario", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading usuario for edit:", error);
+					showAlert("Error al cargar datos del usuario", "error");
+				}
+			}
+
+			async function toggleUsuarioStatus(id) {
+				try {
+					const usuario = await apiRequest(`${API_ENDPOINTS.usuarios}/${id}`);
+					const newStatus = usuario.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.usuarios}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({
+							nombre: usuario.nombre,
+							email: usuario.email,
+							role: usuario.role,
+							estado: newStatus
+						}),
+					});
+
+					showAlert(`Usuario ${newStatus === "activo" ? "activado" : "desactivado"} exitosamente`, "success");
+					loadUsuarios();
+				} catch (error) {
+					console.error("Error toggling usuario status:", error);
+					showAlert("Error al cambiar estado del usuario", "error");
+				}
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(".action-btn--enable, .action-btn--disable");
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () => viewUsuario(button.getAttribute("data-id")));
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () => editUsuario(button.getAttribute("data-id")));
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () => toggleUsuarioStatus(button.getAttribute("data-id")));
+				});
+			}
+
+			// Display usuarios with pagination
+			function displayUsuarios(page) {
+				const usuariosTableBody = document.getElementById("usuariosTableBody");
+				usuariosTableBody.innerHTML = "";
+
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedUsuarios = filteredUsuarios.slice(startIndex, endIndex);
+
+				if (paginatedUsuarios.length === 0) {
+					usuariosTableBody.innerHTML = `
+						<tr>
+							<td colspan="8" class="table__no-data">No se encontraron usuarios</td>
+						</tr>
+					`;
+					return;
+				}
+
+				paginatedUsuarios.forEach((usuario) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+						<td class="table__cell">${usuario.id}</td>
+						<td class="table__cell">${usuario.nombre}</td>
+						<td class="table__cell">${usuario.email}</td>
+						<td class="table__cell">${usuario.role}</td>
+						<td class="table__cell">
+							<span class="status ${usuario.estado === "activo" ? "status--active" : "status--inactive"}">
+								${usuario.estado}
+							</span>
+						</td>
+						<td class="table__cell">${formatDate(usuario.created_at)}</td>
+						<td class="table__cell">${formatDate(usuario.updated_at)}</td>
+						<td class="table__cell table__actions">
+							<button class="action-btn action-btn--view" data-id="${usuario.id}" title="Ver detalles">
+								<span class="material-icons">visibility</span>
+							</button>
+							<button class="action-btn action-btn--edit" data-id="${usuario.id}" title="Editar usuario">
+								<span class="material-icons">edit</span>
+							</button>
+							<button class="action-btn ${usuario.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+									data-id="${usuario.id}"
+									title="${usuario.estado === "activo" ? "Deshabilitar" : "Habilitar"} usuario">
+								<span class="material-icons">${usuario.estado === "activo" ? "block" : "check_circle"}</span>
+							</button>
+						</td>
+					`;
+					usuariosTableBody.appendChild(row);
+				});
+				setupPagination(filteredUsuarios.length);
+				addActionButtonListeners();
+			}
+
+			// Setup pagination
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${currentPage === 1 ? "pagination__btn--disabled" : ""}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displayUsuarios(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${i === currentPage ? "pagination__btn--active" : ""}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displayUsuarios(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${currentPage === totalPages ? "pagination__btn--disabled" : ""}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displayUsuarios(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Load usuarios
+			async function loadUsuarios() {
+				try {
+					const usuarios = await apiRequest(API_ENDPOINTS.usuarios);
+					filteredUsuarios = usuarios;
+					currentPage = 1;
+					displayUsuarios(currentPage);
+				} catch (error) {
+					console.error("Error loading usuarios:", error);
+					document.getElementById("usuariosTableBody").innerHTML = `
+						<tr>
+							<td colspan="8" class="table__no-data">Error al cargar los usuarios</td>
+						</tr>
+					`;
+				}
+			}
+
+			 // Report generation functions
+			async function generateUsuarioReport() {
+				const statusFilter = document.getElementById("reportStatusSelect").value;
+				const roleFilter = document.getElementById("reportRoleSelect").value;
+
+				try {
+					const usuarios = await apiRequest(API_ENDPOINTS.usuarios);
+
+					const filteredData = usuarios.filter(item => {
+						const matchesStatus = !statusFilter || item.estado === statusFilter;
+						const matchesRole = !roleFilter || item.role === roleFilter;
+						return matchesStatus && matchesRole;
+					});
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure
+					reportData = filteredData.map(item => ({
+						id: item.id,
+						nombre: item.nombre,
+						email: item.email,
+						telefono: item.telefono || 'No especificado',
+						role: item.role,
+						estado: item.estado,
+						created_at: formatDate(item.created_at),
+						updated_at: formatDate(item.updated_at)
+					}));
+
+					// Update summary
+					const totalUsuarios = reportData.length;
+					const usuariosActivos = reportData.filter(item => item.estado === "activo").length;
+					const usuariosInactivos = totalUsuarios - usuariosActivos;
+					const totalAdmins = reportData.filter(item => item.role === "admin").length;
+					const totalRegulares = totalUsuarios - totalAdmins;
+
+					document.getElementById("totalUsuarios").textContent = totalUsuarios;
+					document.getElementById("usuariosActivos").textContent = usuariosActivos;
+					document.getElementById("usuariosInactivos").textContent = usuariosInactivos;
+					document.getElementById("totalAdmins").textContent = totalAdmins;
+					document.getElementById("totalRegulares").textContent = totalRegulares;
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating usuario report:", error);
+					showAlert("Error al generar reporte de usuarios", "error");
+				}
+			}
+
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map(item => ({
+						ID: item.id,
+						Nombre: item.nombre,
+						Email: item.email,
+						Teléfono: item.telefono,
+						Rol: item.role,
+						Estado: item.estado,
+						"Fecha Creación": item.created_at,
+						"Última Actualización": item.updated_at
+					}));
+
+					if (exportToExcel(data, "Reporte_Usuarios")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Email", key: "email" },
+						{ header: "Teléfono", key: "telefono" },
+						{ header: "Rol", key: "role" },
+						{ header: "Estado", key: "estado" },
+						{ header: "Fecha Creación", key: "created_at" },
+						{ header: "Última Actualización", key: "updated_at" }
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Usuarios")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initUsuariosPage();
+			});
+
+			function initUsuariosPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterRole = document.getElementById("filterRole");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newUserBtn = document.getElementById("newUserBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements setup and event listeners
+				const userModal = document.getElementById("userModal");
+				const viewUserModal = document.getElementById("viewUserModal");
+				const userReportModal = document.getElementById("userReportModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const userForm = document.getElementById("userForm");
+				const modalCloses = document.querySelectorAll(".modal__close");
+				const modalCancel = userModal.querySelector(".modal__cancel");
+
+				// Add close functionality to all modals
+				modalCloses.forEach(closeBtn => {
+					closeBtn.addEventListener("click", () => {
+						currentUsuario = null;
+						userForm.reset();
+						closeModal(closeBtn.closest(".modal"));
+					});
+				});
+
+				// Initial load
+				loadUsuarios();
+
+				// Update displayUsuarios to add action listeners after rendering
+				const originalDisplayUsuarios = displayUsuarios;
+				displayUsuarios = function(page) {
+					originalDisplayUsuarios(page);
+					addActionButtonListeners();
+				};
+
+				 // Apply filters
+				async function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const roleFilter = filterRole.value;
+
+					try {
+						const usuarios = await apiRequest(API_ENDPOINTS.usuarios);
+						filteredUsuarios = usuarios.filter((usuario) => {
+							const matchesSearch =
+								searchTerm === "" ||
+								usuario.nombre.toLowerCase().includes(searchTerm) ||
+								usuario.email.toLowerCase().includes(searchTerm);
+							
+							const matchesStatus =
+								statusFilter === "" || usuario.estado === statusFilter;
+							
+							const matchesRole =
+								roleFilter === "" || usuario.role === roleFilter;
+
+							return matchesSearch && matchesStatus && matchesRole;
+						});
+
+						currentPage = 1;
+						displayUsuarios(currentPage);
+						setupPagination(filteredUsuarios.length);
+					} catch (error) {
+						console.error("Error applying filters:", error);
+						showAlert("Error al aplicar filtros", "error");
+					}
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterRole.value = "";
+					loadUsuarios();
+				}
+
+				// Event listeners for filters
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				searchInput.addEventListener("keyup", applyFilters);
+				filterStatus.addEventListener("change", applyFilters);
+				filterRole.addEventListener("change", applyFilters);
+
+				// Event listeners
+				modalCancel.addEventListener("click", () => closeModal(userModal));
+				userForm.addEventListener("submit", handleUsuarioFormSubmit);
+				newUserBtn.addEventListener("click", () => {
+					currentUsuario = null;
+					modalTitle.textContent = "Nuevo Usuario";
+					userForm.reset();
+					userModal.classList.add("modal--open");
+				});
+
+				generateReportBtn.addEventListener("click", () => {
+					userReportModal.classList.add("modal--open");
+
+					// Set up report generation listeners
+					document.getElementById("generateReportDataBtn").addEventListener("click", generateUsuarioReport);
+					document.getElementById("exportExcelBtn").addEventListener("click", exportReportToExcel);
+					document.getElementById("exportPdfBtn").addEventListener("click", exportReportToPdf);
+				});
+
+				// Add close functionality for report modal
+				userReportModal.querySelector(".modal__close").addEventListener("click", () => {
+					closeModal(userReportModal);
+				});
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Ciclos</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+		<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title">Gestión de Ciclos de Cultivo</h2>
+					<div class="section__actions">
+						<button id="newCicloBtn" class="btn btn--primary">
+							Nuevo Ciclo
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+				</div>
+
+				<div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input
+								type="text"
+								id="searchInput"
+								class="form__input"
+								placeholder="Buscar por nombre o ID..."
+							/>
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<label for="filterDate" class="form__label"></label>
+							<input type="date" id="filterDate" class="form__input" />
+						</div>
+						<button id="applyFilterBtn" class="btn btn--primary">
+							Aplicar Filtros
+						</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="ciclosList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Fecha inicio</th>
+								<th>Fecha fin</th>
+								<th>Descripción</th>
+								<th>Novedades</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="ciclosTableBody">
+							<!-- Los datos de ciclos se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+				</div>
+
+				<div id="pagination" class="pagination">
+					<!-- La paginación se generará dinámicamente -->
+				</div>
+			</div>
+
+			<!-- Modal para crear/editar ciclo -->
+			<div id="cicloModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 id="modalTitle" class="modal__title">Nuevo Ciclo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="cicloForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group">
+									<label for="nombre" class="form__label">Nombre del Ciclo *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="fecha_inicio" class="form__label">Fecha inicio *</label>
+									<input type="date" id="fecha_inicio" name="fecha_inicio" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="fecha_fin" class="form__label">Fecha fin *</label>
+									<input type="date" id="fecha_fin" name="fecha_fin" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="novedades" class="form__label">Novedades *</label>
+									<input type="text" id="novedades" name="novedades" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="estado" class="form__label">Estado</label>
+									<select id="estado" name="estado" class="form__select">
+										<option value="activo">Activo</option>
+										<option value="inactivo">Inactivo</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="descripcion" class="form__label">Descripción *</label>
+									<textarea id="descripcion" name="descripcion" class="form__textarea" required></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar ciclo -->
+			<div id="viewCicloModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles del Ciclo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="cicloDetails">
+						<!-- Los detalles del ciclo se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de ciclo -->
+			<div id="cicloReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Ciclos</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label"
+									>Filtrar por Estado</label
+								>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Ciclos: <span id="totalCiclos">0</span></p>
+								<p>Ciclos Activos: <span id="ciclosActivos">0</span></p>
+								<p>Ciclos Inactivos: <span id="ciclosInactivos">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				cultivos: `${API_BASE_URL}/cultivos`,
+				sensores: `${API_BASE_URL}/sensores`,
+				insumos: `${API_BASE_URL}/insumos`,
+				ciclos: `${API_BASE_URL}/ciclos`,
+			};
+
+			// Update apiRequest function to handle CORS properly
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							// Add CORS headers
+							Accept: "application/json",
+						},
+						// Change credentials mode
+						credentials: "same-origin", // or remove this line if not using cookies
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					const data = await response.json();
+					return data;
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentCiclo = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredCiclos = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			// Display cultivos with pagination
+			function displayCiclos(page) {
+				const ciclosTableBody = document.getElementById("ciclosTableBody");
+				// Clear table
+				ciclosTableBody.innerHTML = "";
+
+				// Calculate start and end index for current page
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedCiclos = filteredCiclos.slice(startIndex, endIndex);
+
+				if (paginatedCiclos.length === 0) {
+					ciclosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">No se encontraron ciclos</td>
+          </tr>
+        `;
+					return;
+				}
+
+				// Add ciclos to table
+				paginatedCiclos.forEach((ciclo) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+          <td class="table__cell">${ciclo.id_ciclo}</td>
+          <td class="table__cell">${ciclo.nombre}</td>
+          <td class="table__cell">${formatDate(ciclo.fecha_inicio)}</td>
+          <td class="table__cell">${formatDate(ciclo.fecha_fin)}</td>
+          <td class="table__cell">${ciclo.descripcion}</td>
+          <td class="table__cell">${ciclo.novedades}</td>
+          <td class="table__cell">
+            <span class="status ${
+							ciclo.estado === "activo"
+								? "status--active"
+								: "status--inactive"
+						}">
+              ${ciclo.estado}
+            </span>
+          </td>
+          <td class="table__cell table__actions">
+            <button class="action-btn action-btn--view" data-id="${ciclo.id_ciclo}" title="Ver detalles">
+              <span class="material-icons">visibility</span>
+            </button>
+            <button class="action-btn action-btn--edit" data-id="${ciclo.id_ciclo}" title="Editar ciclo">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="action-btn ${ciclo.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+                    data-id="${ciclo.id_ciclo}"
+                    title="${ciclo.estado === "activo" ? "Deshabilitar" : "Habilitar"} ciclo">
+              <span class="material-icons">${ciclo.estado === "activo" ? "block" : "check_circle"}</span>
+            </button>
+          </td>
+        `;
+					ciclosTableBody.appendChild(row);
+				});
+
+				// Add event listeners for action buttons
+				addActionButtonListeners();
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(
+					".action-btn--enable, .action-btn--disable"
+				);
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						viewCiclo(button.getAttribute("data-id"))
+					);
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						editCiclo(button.getAttribute("data-id"))
+					);
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						toggleCicloStatus(button.getAttribute("data-id"))
+					);
+				});
+			}
+
+			async function toggleCicloStatus(id) {
+				try {
+					const ciclo = await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`);
+					const newStatus = ciclo.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({ estado: newStatus }),
+					});
+
+					showAlert(
+						`Ciclo ${
+							newStatus === "activo" ? "habilitado" : "deshabilitado"
+						} exitosamente`,
+						"success"
+					);
+					loadCiclos();
+				} catch (error) {
+					console.error("Error toggling ciclo status:", error);
+					showAlert("Error al cambiar estado del ciclo", "error");
+				}
+			}
+
+			// Update loadCiclos to use setupPagination from global scope
+			async function loadCiclos() {
+				try {
+					const ciclos = await apiRequest(API_ENDPOINTS.ciclos);
+
+					if (!Array.isArray(ciclos)) {
+						throw new Error("Formato de respuesta inválido");
+					}
+
+					filteredCiclos = [...ciclos];
+					currentPage = 1;
+					displayCiclos(currentPage);
+					setupPagination(filteredCiclos.length);
+				} catch (error) {
+					console.error("Error loading ciclos:", error);
+					const ciclosTableBody =
+						document.getElementById("ciclosTableBody");
+					const pagination = document.getElementById("pagination");
+
+					ciclosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">
+              Error al cargar los ciclos: ${error.message}
+            </td>
+          </tr>
+        `;
+					pagination.innerHTML = "";
+				}
+			}
+
+			// Move setupPagination to global scope
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${
+					currentPage === 1 ? "pagination__btn--disabled" : ""
+				}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displayCiclos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${
+						i === currentPage ? "pagination__btn--active" : ""
+					}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displayCiclos(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${
+					currentPage === totalPages ? "pagination__btn--disabled" : ""
+				}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displayCiclos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Estado global y funciones principales
+			// Funciones CRUD
+			async function getCiclos() {
+				return apiRequest(API_ENDPOINTS.ciclos);
+			}
+
+			async function createCiclo(cicloData) {
+				return apiRequest(API_ENDPOINTS.ciclos, {
+					method: "POST",
+					body: JSON.stringify(cicloData),
+				});
+			}
+
+			async function updateCiclo(id, cicloData) {
+				return apiRequest(`${API_ENDPOINTS.ciclos}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(cicloData),
+				});
+			}
+
+			async function deleteCicloById(id) {
+				return apiRequest(`${API_ENDPOINTS.ciclos}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleCicloFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+					const fecha_inicio = formData.get("fecha_inicio");
+					const fecha_fin = formData.get("fecha_fin");
+
+					// Validate required fields
+					if (
+						!formData.get("nombre") ||
+						!fecha_fin ||
+						!fecha_inicio
+					) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					// Create ciclo data object matching database schema
+					const cicloData = {
+						nombre: formData.get("nombre"),
+						novedad: formData.get("novedades"),
+						fecha_inicio: fecha_inicio,
+						fecha_fin: fecha_fin,
+						descripcion: formData.get("descripcion") || "",
+						estado: formData.get("estado") || "activo",
+					};
+
+					// Determine if this is a create or update operation
+					const isUpdate = currentCiclo !== null;
+					const method = isUpdate ? "PUT" : "POST";
+					const url = isUpdate
+						? `${API_ENDPOINTS.ciclos}/${currentCiclo.id_ciclo}`
+						: API_ENDPOINTS.ciclos;
+
+					const response = await fetch(url, {
+						method: method,
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						body: JSON.stringify(cicloData),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(
+							errorData.message ||
+								`Error al ${isUpdate ? "actualizar" : "crear"} ciclo`
+						);
+					}
+
+					const data = await response.json();
+					closeModal(cicloModal);
+					showAlert(
+						`Ciclo ${isUpdate ? "actualizado" : "creado"} exitosamente`,
+						"success"
+					);
+					loadCiclos();
+
+					// Reset currentCiclo after operation
+					currentCiclo = null;
+					// Reset form submit handler
+					e.target.onsubmit = handleCicloFormSubmit;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			// Función para mostrar alertas
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			// Add viewCiclo function at global scope
+			async function viewCiclo(id) {
+				try {
+					const ciclo = await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`);
+					const cicloDetails = document.getElementById("cicloDetails");
+
+					cicloDetails.innerHTML = `
+      <div class="entity-details">
+        <div class="entity-details__info">
+          <div class="entity-details__group">
+            <label>ID del Ciclo:</label>
+            <p>${ciclo.id_ciclo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Nombre:</label>
+            <p>${ciclo.nombre}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Novedades:</label>
+            <p>${ciclo.novedad}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha inicio:</label>
+            <p>${formatDate(ciclo.fecha_inicio)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha fin:</label>
+            <p>${formatDate(ciclo.fecha_fin)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Estado:</label>
+            <p class="status ${ciclo.estado === "activo" ? "status--active" : "status--inactive"}">
+              ${ciclo.estado}
+            </p>
+          </div>
+          <div class="entity-details__group">
+            <label>Descripción:</label>
+            <p>${ciclo.descripcion}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha de Creación:</label>
+            <p>${formatDate(ciclo.created_at)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Última Actualización:</label>
+            <p>${formatDate(ciclo.updated_at)}</p>
+          </div>
+        </div>
+      </div>
+      <div class="entity-details__actions">
+        <button class="btn" onclick="closeModal(viewCicloModal)">Cerrar</button>
+        <button class="btn btn--primary" onclick="editCiclo('${ciclo.id_ciclo}')">Editar</button>
+      </div>
+    `;
+
+					document.getElementById("viewCicloModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing ciclo:", error);
+					showAlert("Error al cargar detalles del ciclo", "error");
+				}
+			}
+
+			// Add editCiclo function before initCiclosPage
+			async function editCiclo(id) {
+				try {
+					const ciclo = await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`);
+					currentCiclo = ciclo;
+
+					// Update modal title
+					modalTitle.textContent = "Editar Ciclo";
+
+					// Fill form with ciclo data
+					document.getElementById("nombre").value = ciclo.nombre;
+					document.getElementById("novedades").value = ciclo.novedad; 
+					document.getElementById("fecha_inicio").value =
+						ciclo.fecha_inicio.split("T")[0];
+					document.getElementById("fecha_fin").value =
+						ciclo.fecha_fin.split("T")[0];
+					document.getElementById("descripcion").value =
+						ciclo.descripcion || "";
+					document.getElementById("estado").value = ciclo.estado;
+
+					// Show modal
+					cicloModal.classList.add("modal--open");
+
+					// Update form submit handler for edit
+					const cicloForm = document.getElementById("cicloForm");
+					cicloForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(cicloForm);
+							const updatedData = {
+								nombre: formData.get("nombre"),
+								novedad: formData.get("novedades"),
+								fecha_inicio: formData.get("fecha_inicio"),
+								fecha_fin: formData.get("fecha_fin"),
+								descripcion: formData.get("descripcion"),
+								estado: formData.get("estado"),
+							};
+
+							await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`, {
+								method: "PUT",
+								body: JSON.stringify(updatedData),
+							});
+
+							closeModal(cicloModal);
+							showAlert("Ciclo actualizado exitosamente", "success");
+							loadCiclos();
+						} catch (error) {
+							console.error("Error updating ciclo:", error);
+							showAlert("Error al actualizar ciclo", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading ciclo for edit:", error);
+					showAlert("Error al cargar datos del ciclo", "error");
+				}
+			}
+
+			// Update report data generation
+			async function generateCicloReport() {
+				const statusFilter =
+					document.getElementById("reportStatusSelect").value;
+
+				try {
+					const ciclos = await apiRequest(API_ENDPOINTS.ciclos);
+
+					const filteredData = statusFilter
+						? ciclos.filter((item) => item.estado === statusFilter)
+						: ciclos;
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure without sensores and insumos
+					reportData = filteredData.map((item) => ({
+						id_ciclo: item.id_ciclo,
+						nombre: item.nombre,
+						novedad: item.novedad,
+						fecha_inicio: formatDate(item.fecha_inicio),
+						fecha_fin: formatDate(item.fecha_fin),
+						estado: item.estado,
+					}));
+
+					// Update summary
+					const totalCiclos = reportData.length;
+					const ciclosActivos = reportData.filter(
+						(item) => item.estado === "activo"
+					).length;
+					const ciclosInactivos = totalCiclos - ciclosActivos;
+
+					document.getElementById("totalCiclos").textContent = totalCiclos;
+					document.getElementById("ciclosActivos").textContent =
+						ciclosActivos;
+					document.getElementById("ciclosInactivos").textContent =
+						ciclosInactivos;
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating ciclo report:", error);
+					showAlert("Error al generar reporte de ciclos", "error");
+				}
+			}
+
+			// Update Excel export columns
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map((item) => ({
+						ID: item.id_ciclo,
+						Nombre: item.nombre,
+						Novedades: item.novedad,
+						"Fecha Inicio": item.fecha_inicio,
+						"Fecha Fin": item.fecha_fin,
+						Estado: item.estado,
+					}));
+
+					if (exportToExcel(data, "Reporte_Ciclos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Update PDF export columns
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id_ciclo" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Novedades", key: "novedad" },
+						{ header: "Fecha Inicio", key: "fecha_inicio" },
+						{ header: "Fecha Fin", key: "fecha_fin" },
+						{ header: "Estado", key: "estado" },
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Ciclos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initCiclosPage();
+			});
+
+			function initCiclosPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterType = document.getElementById("filterType");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newCicloBtn = document.getElementById("newCicloBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements
+				const cicloModal = document.getElementById("cicloModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const cicloForm = document.getElementById("cicloForm");
+				const modalClose = cicloModal.querySelector(".modal__close");
+				const modalCancel = cicloModal.querySelector(".modal__cancel");
+
+				const viewCicloModal = document.getElementById("viewCicloModal");
+				const viewModalClose = viewCicloModal.querySelector(".modal__close");
+
+				const cicloReportModal =
+					document.getElementById("cicloReportModal");
+				const reportModalClose =
+					cicloReportModal.querySelector(".modal__close");
+
+				// Load ciclos on page initialization
+				loadCiclos();
+
+				// Event listeners
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				newCicloBtn.addEventListener("click", openNewCicloModal);
+				generateReportBtn.addEventListener("click", openReportModal);
+
+				// Modal event listeners
+				modalClose.addEventListener("click", () => closeModal(cicloModal));
+				modalCancel.addEventListener("click", () => closeModal(cicloModal));
+				viewModalClose.addEventListener("click", () =>
+					closeModal(viewCicloModal)
+				);
+				reportModalClose.addEventListener("click", () =>
+					closeModal(cicloReportModal)
+				);
+
+				// Form submission
+				cicloForm.addEventListener("submit", handleCicloFormSubmit);
+
+				// Apply filters
+				function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const typeFilter = filterType.value;
+
+					apiRequest(API_ENDPOINTS.ciclos)
+						.then((ciclos) => {
+							filteredCiclos = ciclos.filter((ciclo) => {
+								const matchesSearch =
+									searchTerm === "" ||
+									ciclo.nombre.toLowerCase().includes(searchTerm) ||
+									ciclo.id_ciclo.toLowerCase().includes(searchTerm);
+
+								const matchesStatus =
+									statusFilter === "" || ciclo.estado === statusFilter;
+								const matchesType =
+									typeFilter === "" || ciclo.tipo === typeFilter;
+
+								return matchesSearch && matchesStatus && matchesType;
+							});
+
+							currentPage = 1;
+							displayCiclos(currentPage);
+							setupPagination(filteredCiclos.length);
+						})
+						.catch((error) => {
+							console.error("Error applying filters:", error);
+							showAlert("Error al aplicar filtros", "error");
+						});
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterType.value = "";
+
+					loadCiclos();
+				}
+
+				// Open modal for new ciclo
+				function openNewCicloModal() {
+					currentCiclo = null;
+					modalTitle.textContent = "Nuevo Ciclo";
+					cicloForm.reset();
+
+					// Set default values
+					document.getElementById("estado").value = "activo";
+					document.getElementById("fecha_inicio").valueAsDate = new Date();
+					document.getElementById("fecha_fin").valueAsDate = new Date();
+
+					// Reset form submit handler
+					cicloForm.onsubmit = handleCicloFormSubmit;
+
+					cicloModal.classList.add("modal--open");
+				}
+
+				// Open report modal
+				function openReportModal() {
+					// Show modal
+					cicloReportModal.classList.add("modal--open");
+
+					// Set event listeners for report generation
+					document
+						.getElementById("generateReportDataBtn")
+						.addEventListener("click", generateCicloReport);
+					document
+						.getElementById("exportExcelBtn")
+						.addEventListener("click", exportReportToExcel);
+					document
+						.getElementById("exportPdfBtn")
+						.addEventListener("click", exportReportToPdf);
+				}
+			}
+		</script>
+	</body>
+</html>

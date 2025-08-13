@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Insumos</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="../css/variables.css">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+		<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title">Gestión de Insumos</h2>
+					<div class="section__actions">
+						<button id="newInsumoBtn" class="btn btn--primary">
+							Nuevo Insumo
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+				</div>
+
+				<div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input
+								type="text"
+								id="searchInput"
+								class="form__input"
+								placeholder="Buscar por nombre o ID..."
+							/>
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+                            <label for="filterPrice" class="form__label"></label>
+                            <input type="number" id="filterPrice" class="form__input" placeholder="Ej: 12000">
+                        </div>
+						<button id="applyFilterBtn" class="btn btn--primary">
+							Aplicar Filtros
+						</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="insumosList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Tipo</th>
+								<th>Cantidad</th>
+								<th>Unidad medida</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="insumosTableBody">
+							<!-- Los datos de insumos se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+				</div>
+
+				<div id="pagination" class="pagination">
+					<!-- La paginación se generará dinámicamente -->
+				</div>
+			</div>
+
+			<!-- Modal para crear/editar insumo -->
+			<div id="insumoModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 id="modalTitle" class="modal__title">Nuevo Insumo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="insumoForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group"> <!--  -->
+                                    <label for="tipo" class="form__label">Tipo de Insumo</label>
+                                    <select id="tipo" name="tipo" class="form__select" required>
+                                    <option value="">Seleccione un tipo</option>
+                                    <option value="quimico">Químico</option>
+                                    <option value="biologico">Biológico</option>
+                                    <option value="mecanico">Mecánico/Tecnológico</option>
+                                    <option value="infraestructura">Infraestructura y mantenimiento</option>
+                                    <option value="pecuario">Pecuario</option>
+                                    <option value="semillas">Semillas y material genético</option>
+                                    <option value="productos_agricolas">Productos agrícolas</option>
+                                    <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+								<div class="form__group">
+									<label for="nombre" class="form__label">Nombre del Insumo *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="unidad" class="form__label">Unidad de Medida</label>
+									<select id="unidad" name="unidad" class="form__select" required>
+									<option value="">Seleccione una unidad</option>
+										<option value="litros">Litros (L)</option>
+										<option value="mililitros">Mililitros (ml)</option>
+										<option value="kilogramos">Kilogramos (kg)</option>
+										<option value="gramos">Gramos (g)</option>
+										<option value="ppm">PPM</option>
+										<option value="unidades">Unidades (u)</option>
+										<option value="metros">Metros (m)</option>
+										<option value="metros_cuadrados">Metros cuadrados (m²)</option>
+										<option value="bolsas">Bolsas</option>
+										<option value="cajas">Cajas</option>
+										<option value="otro">Otro</option>
+									</select>
+								</div>
+								<div class="form__group">
+									<label for="cantidad" class="form__label">Cantidad *</label>
+									<input type="number" id="cantidad" name="cantidad" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="valor_unitario" class="form__label">Valor unitario *</label>
+									<input type="number" id="valor_unitario" name="valor_unitario" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="valor_total" class="form__label">Valor total *</label>
+									<input type="number" id="valor_total" name="valor_total" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="estado" class="form__label">Estado</label>
+									<select id="estado" name="estado" class="form__select">
+										<option value="activo">Activo</option>
+										<option value="inactivo">Inactivo</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="descripcion" class="form__label">Descripción *</label>
+									<textarea id="descripcion" name="descripcion" class="form__textarea" required></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar insumo -->
+			<div id="viewInsumoModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles del Insumo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="insumoDetails">
+						<!-- Los detalles del insumo se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de insumo -->
+			<div id="insumoReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Insumos</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label"
+									>Filtrar por Estado</label
+								>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Insumos: <span id="totalInsumos">0</span></p>
+								<p>Insumos Activos: <span id="insumosActivos">0</span></p>
+								<p>Insumos Inactivos: <span id="insumosInactivos">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				cultivos: `${API_BASE_URL}/cultivos`,
+				sensores: `${API_BASE_URL}/sensores`,
+				insumos: `${API_BASE_URL}/insumos`,
+			};
+
+			// Update apiRequest function to handle CORS properly
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							// Add CORS headers
+							Accept: "application/json",
+						},
+						// Change credentials mode
+						credentials: "same-origin", // or remove this line if not using cookies
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					const data = await response.json();
+					return data;
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentInsumo = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredInsumos = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			// Display insumos with pagination
+			function displayInsumos(page) {
+				const insumosTableBody = document.getElementById("insumosTableBody");
+				// Clear table
+				insumosTableBody.innerHTML = "";
+
+				// Calculate start and end index for current page
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedInsumos = filteredInsumos.slice(startIndex, endIndex);
+
+				if (paginatedInsumos.length === 0) {
+					insumosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">No se encontraron Insumos</td>
+          </tr>
+        `;
+					return;
+				}
+
+				// Add cultivos to table
+				paginatedInsumos.forEach((insumo) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+          <td class="table__cell">${insumo.id_insumo}</td>
+          <td class="table__cell">${insumo.nombre}</td>
+          <td class="table__cell">${insumo.tipo}</td>
+          <td class="table__cell">${insumo.cantidad}</td>
+          <td class="table__cell">${insumo.unidad}</td>
+          <td class="table__cell">
+            <span class="status ${
+							insumo.estado === "activo"
+								? "status--active"
+								: "status--inactive"
+						}">
+              ${insumo.estado}
+            </span>
+          </td>
+          <td class="table__cell table__actions">
+            <button class="action-btn action-btn--view" data-id="${insumo.id_insumo}" title="Ver detalles">
+              <span class="material-icons">visibility</span>
+            </button>
+            <button class="action-btn action-btn--edit" data-id="${insumo.id_insumo}" title="Editar insumo">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="action-btn ${insumo.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+                    data-id="${insumo.id_insumo}"
+                    title="${insumo.estado === "activo" ? "Deshabilitar" : "Habilitar"} insumo">
+              <span class="material-icons">${insumo.estado === "activo" ? "block" : "check_circle"}</span>
+            </button>
+          </td>
+        `;
+					insumosTableBody.appendChild(row);
+				});
+
+				// Add event listeners for action buttons
+				addActionButtonListeners();
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(
+					".action-btn--enable, .action-btn--disable"
+				);
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						viewInsumo(button.getAttribute("data-id"))
+					);
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						editInsumo(button.getAttribute("data-id"))
+					);
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						toggleInsumoStatus(button.getAttribute("data-id"))
+					);
+				});
+			}
+
+			async function toggleInsumoStatus(id) {
+				try {
+					const insumo = await apiRequest(`${API_ENDPOINTS.insumos}/${id}`);
+					const newStatus = insumo.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.insumos}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({ estado: newStatus }),
+					});
+
+					showAlert(
+						`Insumo ${
+							newStatus === "activo" ? "habilitado" : "deshabilitado"
+						} exitosamente`,
+						"success"
+					);
+					loadInsumos();
+				} catch (error) {
+					console.error("Error toggling insumo status:", error);
+					showAlert("Error al cambiar estado del insumo", "error");
+				}
+			}
+
+			// Update loadInsumos to use setupPagination from global scope
+			async function loadInsumos() {
+				try {
+					const insumos = await apiRequest(API_ENDPOINTS.insumos);
+
+					if (!Array.isArray(insumos)) {
+						throw new Error("Formato de respuesta inválido");
+					}
+
+					filteredInsumos = [...insumos];
+					currentPage = 1;
+					displayInsumos(currentPage);
+					setupPagination(filteredInsumos.length);
+				} catch (error) {
+					console.error("Error loading insumos:", error);
+					const insumosTableBody =
+						document.getElementById("insumosTableBody");
+					const pagination = document.getElementById("pagination");
+
+					insumosTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">
+              Error al cargar los insumos: ${error.message}
+            </td>
+          </tr>
+        `;
+					pagination.innerHTML = "";
+				}
+			}
+
+			// Move setupPagination to global scope
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${
+					currentPage === 1 ? "pagination__btn--disabled" : ""
+				}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displayInsumos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${
+						i === currentPage ? "pagination__btn--active" : ""
+					}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displayInsumos(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${
+					currentPage === totalPages ? "pagination__btn--disabled" : ""
+				}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displayInsumos(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Estado global y funciones principales
+			// Funciones CRUD
+			async function getInsumos() {
+				return apiRequest(API_ENDPOINTS.insumos);
+			}
+
+			async function createInsumo(insumoData) {
+				return apiRequest(API_ENDPOINTS.insumos, {
+					method: "POST",
+					body: JSON.stringify(insumoData),
+				});
+			}
+
+			async function updateInsumo(id, insumoData) {
+				return apiRequest(`${API_ENDPOINTS.insumos}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(insumoData),
+				});
+			}
+
+			async function deleteInsumoById(id) {
+				return apiRequest(`${API_ENDPOINTS.insumos}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleInsumoFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+
+					// Validate required fields
+					if (
+						!formData.get("nombre") ||
+						!formData.get("tipo") ||
+						!formData.get("cantidad") ||
+						!formData.get("valor_unitario") ||
+						!formData.get("unidad")
+					) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					// Create insumo data object matching database schema
+					const insumoData = {
+						tipo: formData.get("tipo"),
+						nombre: formData.get("nombre"),
+						unidad: formData.get("unidad"),
+						valor_unitario: formData.get("valor_unitario"),
+						valor_total: formData.get("valor_total"),
+						cantidad: formData.get("cantidad"),
+						descripcion: formData.get("descripcion") || "",
+						estado: formData.get("estado") || "activo",
+					};
+
+					// Determine if this is a create or update operation
+					const isUpdate = currentInsumo !== null;
+					const method = isUpdate ? "PUT" : "POST";
+					const url = isUpdate
+						? `${API_ENDPOINTS.insumos}/${currentInsumo.id_insumo}`
+						: API_ENDPOINTS.insumos;
+
+					const response = await fetch(url, {
+						method: method,
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						body: JSON.stringify(insumoData),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(
+							errorData.message ||
+								`Error al ${isUpdate ? "actualizar" : "crear"} insumo`
+						);
+					}
+
+					const data = await response.json();
+					closeModal(insumoModal);
+					showAlert(
+						`Insumo ${isUpdate ? "actualizado" : "creado"} exitosamente`,
+						"success"
+					);
+					loadInsumos();
+
+					// Reset currentInsumo after operation
+					currentInsumo = null;
+					// Reset form submit handler
+					e.target.onsubmit = handleInsumoFormSubmit;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			// Función para mostrar alertas
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			// Add viewInsumo function at global scope
+			async function viewInsumo(id) {
+				try {
+					const insumo = await apiRequest(`${API_ENDPOINTS.insumos}/${id}`);
+					const insumoDetails = document.getElementById("insumoDetails");
+
+					insumoDetails.innerHTML = `
+      <div class="entity-details">
+        <div class="entity-details__info">
+          <div class="entity-details__group">
+            <label>ID del Insumo:</label>
+            <p>${insumo.id_cultivo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Nombre:</label>
+            <p>${insumo.nombre}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Tipo:</label>
+            <p>${insumo.tipo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Unidad de medida:</label>
+            <p>${insumo.unidad}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Cantidad:</label>
+            <p>${insumo.cantidad}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Valor unitario:</label>
+            <p>${insumo.valor_unitario}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Valor total:</label>
+            <p>${insumo.valor_total}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Estado:</label>
+            <p class="status ${insumo.estado === "activo" ? "status--active" : "status--inactive"}">
+              ${insumo.estado}
+            </p>
+          </div>
+          <div class="entity-details__group">
+            <label>Descripción:</label>
+            <p>${insumo.descripcion}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha de Registro:</label>
+            <p>${formatDate(insumo.created_at)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Última Actualización:</label>
+            <p>${formatDate(insumo.updated_at)}</p>
+          </div>
+        </div>
+      </div>
+      <div class="entity-details__actions">
+        <button class="btn" onclick="closeModal(viewInsumoModal)">Cerrar</button>
+        <button class="btn btn--primary" onclick="editInsumo('${insumo.id_insumo}')">Editar</button>
+      </div>
+    `;
+
+					document.getElementById("viewInsumoModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing insumo:", error);
+					showAlert("Error al cargar detalles del insumo", "error");
+				}
+			}
+
+			// Add editInsumo function before initInsumosPage
+			async function editInsumo(id) {
+				try {
+					const insumo = await apiRequest(`${API_ENDPOINTS.insumos}/${id}`);
+					currentInsumo = insumo;
+
+					// Update modal title
+					modalTitle.textContent = "Editar Insumo";
+
+					// Fill form with insumo data
+					document.getElementById("tipo").value = insumo.tipo;
+					document.getElementById("nombre").value = insumo.nombre;
+					document.getElementById("unidad").value = insumo.unidad;
+					document.getElementById("cantidad").value = insumo.cantidad;
+					document.getElementById("valor_unitario").value = insumo.valor_unitario;
+					document.getElementById("valor_total").value = insumo.valor_total;
+					document.getElementById("descripcion").value =
+						insumo.descripcion || "";
+					document.getElementById("estado").value = insumo.estado;
+
+					// Show modal
+					insumoModal.classList.add("modal--open");
+
+					// Update form submit handler for edit
+					const insumoForm = document.getElementById("insumoForm");
+					insumoForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(insumoForm);
+							const updatedData = {
+								tipo: formData.get("tipo"),
+								nombre: formData.get("nombre"),
+								unidad: formData.get("unidad"),
+								cantidad: formData.get("cantidad"),
+								valor_unitario: formData.get("valor_unitario"),
+								valor_total: formData.get("valor_total"),
+								descripcion: formData.get("descripcion"),
+								estado: formData.get("estado"),
+							};
+
+							await apiRequest(`${API_ENDPOINTS.insumos}/${id}`, {
+								method: "PUT",
+								body: JSON.stringify(updatedData),
+							});
+
+							closeModal(insumoModal);
+							showAlert("Insumo actualizado exitosamente", "success");
+							loadInsumos();
+						} catch (error) {
+							console.error("Error updating insumo:", error);
+							showAlert("Error al actualizar insumo", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading insumo for edit:", error);
+					showAlert("Error al cargar datos del insumo", "error");
+				}
+			}
+
+			// Update report data generation
+			async function generateInsumoReport() {
+				const statusFilter =
+					document.getElementById("reportStatusSelect").value;
+
+				try {
+					const insumos = await apiRequest(API_ENDPOINTS.insumos);
+
+					const filteredData = statusFilter
+						? insumos.filter((item) => item.estado === statusFilter)
+						: insumos;
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure without insumos
+					reportData = filteredData.map((item) => ({
+						id_insumo: item.id_insumo,
+						nombre: item.nombre,
+						tipo: item.tipo,
+						cantidad: item.cantidad,
+						unidad: item.unidad,
+						valor_unitario: item.valor_unitario,
+						valor_total: item.valor_total,
+						estado: item.estado,
+					}));
+
+					// Update summary
+					const totalInsumos = reportData.length;
+					const insumosActivos = reportData.filter(
+						(item) => item.estado === "activo"
+					).length;
+					const insumosInactivos = totalInsumos - insumosActivos;
+
+					document.getElementById("totalInsumos").textContent = totalInsumos;
+					document.getElementById("insumosActivos").textContent =
+						insumosActivos;
+					document.getElementById("insumosInactivos").textContent =
+						insumosInactivos;
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating insumo report:", error);
+					showAlert("Error al generar reporte de insumos", "error");
+				}
+			}
+
+			// Update Excel export columns
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map((item) => ({
+						ID: item.id_insumo,
+						Nombre: item.nombre,
+						Tipo: item.tipo,
+						"Unidad de medida": item.unidad,
+						Cantidad: item.cantidad,
+						"Valor unitario": item.valor_unitario,
+						"Valor total": item.valor_total,
+						Estado: item.estado,
+					}));
+
+					if (exportToExcel(data, "Reporte_Insumos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Update PDF export columns
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id_insumo" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Tipo", key: "tipo" },
+						{ header: "Unidad de medida", key: "unidad" },
+						{ header: "Cantidad", key: "cantidad" },
+						{ header: "Valor unitario", key: "valor_unitario" },
+						{ header: "Valor total", key: "valor_total" },
+						{ header: "Estado", key: "estado" },
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Insumos")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initInsumosPage();
+			});
+
+			function initInsumosPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterType = document.getElementById("filterType");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newInsumoBtn = document.getElementById("newInsumoBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements
+				const insumoModal = document.getElementById("insumoModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const insumoForm = document.getElementById("insumoForm");
+				const modalClose = insumoModal.querySelector(".modal__close");
+				const modalCancel = insumoModal.querySelector(".modal__cancel");
+
+				const viewInsumoModal = document.getElementById("viewInsumoModal");
+				const viewModalClose = viewInsumoModal.querySelector(".modal__close");
+
+				const insumoReportModal =
+					document.getElementById("insumoReportModal");
+				const reportModalClose =
+					insumoReportModal.querySelector(".modal__close");
+
+				// Load insumos on page initialization
+				loadInsumos();
+
+				// Event listeners
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				newInsumoBtn.addEventListener("click", openNewInsumoModal);
+				generateReportBtn.addEventListener("click", openReportModal);
+
+				// Modal event listeners
+				modalClose.addEventListener("click", () => closeModal(insumoModal));
+				modalCancel.addEventListener("click", () => closeModal(insumoModal));
+				viewModalClose.addEventListener("click", () =>
+					closeModal(viewInsumoModal)
+				);
+				reportModalClose.addEventListener("click", () =>
+					closeModal(insumoReportModal)
+				);
+
+				// Form submission
+				insumoForm.addEventListener("submit", handleInsumoFormSubmit);
+
+				// Apply filters
+				function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const typeFilter = filterType.value;
+
+					apiRequest(API_ENDPOINTS.insumos)
+						.then((insumos) => {
+							filteredInsumos = insumos.filter((insumo) => {
+								const matchesSearch =
+									searchTerm === "" ||
+									insumo.nombre.toLowerCase().includes(searchTerm) ||
+									insumo.id_insumo.toLowerCase().includes(searchTerm);
+
+								const matchesStatus =
+									statusFilter === "" || insumo.estado === statusFilter;
+								const matchesType =
+									typeFilter === "" || insumo.tipo === typeFilter;
+
+								return matchesSearch && matchesStatus && matchesType;
+							});
+
+							currentPage = 1;
+							displayInsumos(currentPage);
+							setupPagination(filteredInsumos.length);
+						})
+						.catch((error) => {
+							console.error("Error applying filters:", error);
+							showAlert("Error al aplicar filtros", "error");
+						});
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterType.value = "";
+
+					loadInsumos();
+				}
+
+				// Open modal for new insumo
+				function openNewInsumoModal() {
+					currentInsumo = null;
+					modalTitle.textContent = "Nuevo Insumo";
+					insumoForm.reset();
+
+					// Set default values
+					document.getElementById("estado").value = "activo";
+
+					// Reset form submit handler
+					insumoForm.onsubmit = handleInsumoFormSubmit;
+
+					insumoModal.classList.add("modal--open");
+				}
+
+				// Open report modal
+				function openReportModal() {
+					// Show modal
+					insumoReportModal.classList.add("modal--open");
+
+					// Set event listeners for report generation
+					document
+						.getElementById("generateReportDataBtn")
+						.addEventListener("click", generateInsumoReport);
+					document
+						.getElementById("exportExcelBtn")
+						.addEventListener("click", exportReportToExcel);
+					document
+						.getElementById("exportPdfBtn")
+						.addEventListener("click", exportReportToPdf);
+				}
+			}
+		</script>
+	</body>
+</html>

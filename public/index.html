@@ -1,0 +1,66 @@
+<!-- home.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMBO SGAL - Bienvenido</title>
+    <link rel="stylesheet" href="/public/css/home.css">
+    <link rel="stylesheet" href="/public/css/variables.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header__logo">LEMBO SGAL</div>
+        <nav class="header__nav">
+            <a href="#inicio" class="header__link">Inicio</a>
+            <a href="#acerca" class="header__link">Acerca de</a>
+            <a href="/public/pages/login.html" class="header__btn header__btn--login">Iniciar Sesión</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="inicio">
+        <div class="hero__content">
+            <h1 class="hero__title">Bienvenido a LEMBO SGAL</h1>
+            <p class="hero__subtitle">Sistema de Gestión Agrícola Lembo de Santa Rosa</p>
+            <div class="hero__buttons">
+                <a href="login.html" class="btn btn--primary">Iniciar Sesión</a>
+                <a href="#acerca" class="btn btn--secondary">Más información</a>
+            </div>
+        </div>
+        <div class="hero__image">
+            <img src="img/agriculture.jpg" alt="Imagen agrícola">
+        </div>
+    </section>
+
+    <!-- Módulos -->
+    <section class="modules" id="modulos">
+        <h2 class="modules__title">Nuestros Módulos</h2>
+        <div class="modules__grid">
+            <div class="module-card">
+                <img src="/public/img/cicles.png" alt="Ciclos" class="module-card__icon">
+                <h3 class="module-card__title">Novedades</h3>
+                <p class="module-card__desc">Cada día es un nuevo chisme</p>
+            </div>
+            <div class="module-card">
+                <img src="/public/img/crop.png" alt="Cultivos" class="module-card__icon">
+                <h3 class="module-card__title">Cultivos</h3>
+                <p class="module-card__desc">Observa algunos de nuestros cultivos</p>
+            </div>
+            <div class="module-card">
+                <img src="/public/img/productions.png" alt="Producciones" class="module-card__icon">
+                <h3 class="module-card__title">Sobre nosotros</h3>
+                <p class="module-card__desc">¿Tienes curiosidad?</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer__text">© 2025 LEMBO SGAL - SENA. Todos los derechos reservados.</p>
+    </footer>
+
+</body>
+</html>

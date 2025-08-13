@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Sensores</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+		<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title"><img class="section__image-slider" src="../img/menu-icon.png">Gestión de Sensores</h2>
+					<div class="menu--js"></div>
+					<div class="section__actions">
+						<button id="newSensorBtn" class="btn btn--primary">
+							Nuevo Sensor
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+				</div>
+
+				<div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input
+								type="text"
+								id="searchInput"
+								class="form__input"
+								placeholder="Buscar por nombre o ID..."
+							/>
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<label for="filterDate" class="form__label"></label>
+							<input type="date" id="filterDate" class="form__input" />
+						</div>
+						<button id="applyFilterBtn" class="btn btn--primary">
+							Aplicar Filtros
+						</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="sensoresList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Tipo</th>
+								<th>Unidad Medida</th>
+								<th>Tiempo Escaneo</th>
+								<th>Descripción</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="sensoresTableBody">
+							<!-- Los datos de sensores se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+				</div>
+
+				<div id="pagination" class="pagination">
+					<!-- La paginación se generará dinámicamente -->
+				</div>
+			</div>
+
+			<!-- Modal para crear/editar sensor -->
+			<div id="sensorModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 id="modalTitle" class="modal__title">Nuevo Sensor</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="sensorForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group">
+									<label for="tipo" class="form__label">Tipo de Sensor *</label>
+									<select id="tipo" name="tipo" class="form__select" required>
+										<option value="">Seleccione un tipo</option>
+										<option value="Temperatura">Temperatura</option>
+										<option value="Humedad">Humedad</option>
+										<option value="LuzSolar">Luz solar</option>
+										<option value="CalidadAireGases">Calidad del aire y gases</option>
+										<option value="PresionAtmosfericaClima">Presión atmosférica y clima</option>
+										<option value="DistanciaNivel">Distancia y nivel</option>
+										<option value="SueloNutrientes">Suelo y nutrientes</option>
+										<option value="Multisensor">Multisensor integrado</option>
+										<option value="Otro">Otro</option>
+									</select>
+								</div>
+								<div class="form__group">
+									<label for="nombre" class="form__label">Nombre del Sensor *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="unidad" class="form__label">Unidad de Medida *</label>
+									<select id="unidad" name="unidad" class="form__select" required>
+										<option value="">Seleccione una unidad</option>
+										<optgroup label="Temperatura">
+											<option value="°C">°C (grados Celsius)</option>
+											<option value="°F">°F (grados Fahrenheit)</option>
+											<option value="K">K (kelvin)</option>
+										</optgroup>
+										<optgroup label="Humedad">
+											<option value="%">% (porcentaje de humedad relativa)</option>
+											<option value="g/m³">g/m³ (gramos de vapor de agua por metro cúbico)</option>
+										</optgroup>
+										<optgroup label="Luz solar">
+											<option value="lux">lux (iluminancia)</option>
+											<option value="W/m²">W/m² (vatios por metro cuadrado)</option>
+											<option value="µmol/m²·s">µmol/m²·s (micromoles por metro cuadrado por segundo — luz fotosintética)</option>
+										</optgroup>
+										<optgroup label="Calidad del aire y gases">
+											<option value="ppm">ppm (partes por millón)</option>
+											<option value="µg/m³">µg/m³ (microgramos por metro cúbico)</option>
+										</optgroup>
+										<optgroup label="Presión atmosférica y clima">
+											<option value="hPa">hPa (hectopascales)</option>
+											<option value="mbar">mbar (milibares)</option>
+											<option value="mmHg">mmHg (milímetros de mercurio)</option>
+										</optgroup>
+										<optgroup label="Distancia y nivel">
+											<option value="cm">cm (centímetros)</option>
+											<option value="m">m (metros)</option>
+											<option value="mm">mm (milímetros)</option>
+										</optgroup>
+										<optgroup label="Suelo y nutrientes">
+											<option value="pH">pH (potencial de hidrógeno)</option>
+											<option value="µS/cm">µS/cm (microsiemens por centímetro — conductividad eléctrica)</option>
+											<option value="mg/kg">mg/kg (miligramos por kilogramo — concentración de nutrientes)</option>
+										</optgroup>
+										<optgroup label="Multisensor integrado">
+											<option value="Varios">Varios (combinación de diferentes unidades)</option>
+										</optgroup>
+										<optgroup label="Otro">
+											<option value="Sin unidad">Sin unidad</option>
+											<option value="Otro">Otro</option>
+										</optgroup>
+									</select>
+								</div>
+								<div class="form__group">
+									<label for="tiempo_escaneo" class="form__label">Tiempo Escaneo *</label>
+									<input type="time" id="tiempo_escaneo" name="tiempo_escaneo" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="imagen" class="form__label">Imágen *</label>
+									<input type="file" id="imagen" name="imagen" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="estado" class="form__label">Estado</label>
+									<select id="estado" name="estado" class="form__select">
+										<option value="activo">Activo</option>
+										<option value="inactivo">Inactivo</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="descripcion" class="form__label">Descripción *</label>
+									<textarea id="descripcion" name="descripcion" class="form__textarea" required></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar sensor -->
+			<div id="viewSensorModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles del Sensor</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="sensorDetails">
+						<!-- Los detalles del sensor se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de sensor -->
+			<div id="sensorReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Sensores</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label"
+									>Filtrar por Estado</label
+								>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Sensores: <span id="totalSensores">0</span></p>
+								<p>Cultivos Activos: <span id="sensoresActivos">0</span></p>
+								<p>Cultivos Inactivos: <span id="sensoresInactivos">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				cultivos: `${API_BASE_URL}/cultivos`,
+				sensores: `${API_BASE_URL}/sensores`,
+				insumos: `${API_BASE_URL}/insumos`,
+			};
+
+			// Update apiRequest function to handle CORS properly
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							// Add CORS headers
+							Accept: "application/json",
+						},
+						// Change credentials mode
+						credentials: "same-origin", // or remove this line if not using cookies
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					const data = await response.json();
+					return data;
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentSensor = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredSensores = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			// Display sensores with pagination
+			function displaySensor(page) {
+				const sensoresTableBody = document.getElementById("sensoresTableBody");
+				// Clear table
+				sensoresTableBody.innerHTML = "";
+
+				// Calculate start and end index for current page
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedSensores = filteredSensores.slice(startIndex, endIndex);
+
+				if (paginatedSensores.length === 0) {
+					sensoresTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">No se encontraron sensores</td>
+          </tr>
+        `;
+					return;
+				}
+
+				// Add sensores to table
+				paginatedSensores.forEach((sensor) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+          <td class="table__cell">${sensor.id_sensor}</td>
+          <td class="table__cell">${sensor.nombre}</td>
+          <td class="table__cell">${sensor.tipo}</td>
+          <td class="table__cell">${sensor.unidad}</td>
+          <td class="table__cell">${sensor.tiempo_escaneo}</td>
+          <td class="table__cell">${sensor.descripcion}</td>
+          <td class="table__cell">
+            <span class="status ${
+							sensor.estado === "activo"
+								? "status--active"
+								: "status--inactive"
+						}">
+              ${sensor.estado}
+            </span>
+          </td>
+          <td class="table__cell table__actions">
+            <button class="action-btn action-btn--view" data-id="${sensor.id_sensor}" title="Ver detalles">
+              <span class="material-icons">visibility</span>
+            </button>
+            <button class="action-btn action-btn--edit" data-id="${sensor.id_sensor}" title="Editar sensor">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="action-btn ${sensor.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+                    data-id="${sensor.id_sensor}"
+                    title="${sensor.estado === "activo" ? "Deshabilitar" : "Habilitar"} sensor">
+              <span class="material-icons">${sensor.estado === "activo" ? "block" : "check_circle"}</span>
+            </button>
+          </td>
+        `;
+					sensoresTableBody.appendChild(row);
+				});
+
+				// Add event listeners for action buttons
+				addActionButtonListeners();
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(
+					".action-btn--enable, .action-btn--disable"
+				);
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						viewSensor(button.getAttribute("data-id"))
+					);
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						editSensor(button.getAttribute("data-id"))
+					);
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () =>
+						toggleSensorStatus(button.getAttribute("data-id"))
+					);
+				});
+			}
+
+			async function toggleSensorStatus(id) {
+				try {
+					const sensor = await apiRequest(`${API_ENDPOINTS.sensores}/${id}`);
+					const newStatus = sensor.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.sensores}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({ estado: newStatus }),
+					});
+
+					showAlert(
+						`Sensor ${
+							newStatus === "activo" ? "habilitado" : "deshabilitado"
+						} exitosamente`,
+						"success"
+					);
+					loadSensor();
+				} catch (error) {
+					console.error("Error toggling sensor status:", error);
+					showAlert("Error al cambiar el estado del sensor", "error");
+				}
+			}
+
+			// Update loadSensor to use setupPagination from global scope
+			async function loadSensor() {
+				try {
+					const sensores = await apiRequest(API_ENDPOINTS.sensores);
+
+					if (!Array.isArray(sensores)) {
+						throw new Error("Formato de respuesta inválido");
+					}
+
+					filteredSensores = [...sensores];
+					currentPage = 1;
+					displaySensor(currentPage);
+					setupPagination(filteredSensores.length);
+				} catch (error) {
+					console.error("Error loading sensores:", error);
+					const sensoresTableBody =
+						document.getElementById("sensoresTableBody");
+					const pagination = document.getElementById("pagination");
+
+					sensoresTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="table__no-data">
+              Error al cargar los sensores: ${error.message}
+            </td>
+          </tr>
+        `;
+					pagination.innerHTML = "";
+				}
+			}
+
+			// Move setupPagination to global scope
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${
+					currentPage === 1 ? "pagination__btn--disabled" : ""
+				}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displaySensor(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${
+						i === currentPage ? "pagination__btn--active" : ""
+					}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displaySensor(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${
+					currentPage === totalPages ? "pagination__btn--disabled" : ""
+				}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displaySensor(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Estado global y funciones principales
+			// Funciones CRUD
+			async function getSensor() {
+				return apiRequest(API_ENDPOINTS.sensores);
+			}
+
+			async function createSensor(sensorData) {
+				return apiRequest(API_ENDPOINTS.sensores, {
+					method: "POST",
+					body: JSON.stringify(sensorData),
+				});
+			}
+
+			async function updateSensor(id, sensorData) {
+				return apiRequest(`${API_ENDPOINTS.sensores}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(sensorData),
+				});
+			}
+
+			async function deleteSensorById(id) {
+				return apiRequest(`${API_ENDPOINTS.sensores}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleSensorFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+
+					// Validate required fields
+					if (
+						!formData.get("nombre") ||
+						!formData.get("tipo") || 
+						!formData.get("unidad") ||
+						!formData.get("tiempo_escaneo")
+					) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					// Create sensor data object matching database schema
+					const sensorData = {
+						tipo: formData.get("tipo"),
+						nombre: formData.get("nombre"),
+						unidad: formData.get("unidad"),
+						tiempo_escaneo: formData.get("tiempo_escaneo"),
+						//imagen: imagen,
+						descripcion: formData.get("descripcion") || "",
+						estado: formData.get("estado") || "activo",
+					};
+
+					// Determine if this is a create or update operation
+					const isUpdate = currentSensor !== null;
+					const method = isUpdate ? "PUT" : "POST";
+					const url = isUpdate
+						? `${API_ENDPOINTS.sensores}/${currentSensor.id_sensor}`
+						: API_ENDPOINTS.sensores;
+
+					const response = await fetch(url, {
+						method: method,
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						body: JSON.stringify(sensorData),
+					});
+
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(
+							errorData.message ||
+								`Error al ${isUpdate ? "actualizar" : "crear"} sensor`
+						);
+					}
+
+					const data = await response.json();
+					closeModal(sensorModal);
+					showAlert(
+						`Sensor ${isUpdate ? "actualizado" : "creado"} exitosamente`,
+						"success"
+					);
+					loadSensor();
+
+					// Reset currentSensor after operation
+					currentSensor = null;
+					// Reset form submit handler
+					e.target.onsubmit = handleSensorFormSubmit;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			// Función para mostrar alertas
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			// Add viewSensor function at global scope
+			async function viewSensor(id) {
+				try {
+					const sensor = await apiRequest(`${API_ENDPOINTS.sensores}/${id}`);
+					const sensorDetails = document.getElementById("sensorDetails");
+
+					sensorDetails.innerHTML = `
+      <div class="entity-details">
+        <div class="entity-details__info">
+          <div class="entity-details__group">
+            <label>ID del Sensor:</label>
+            <p>${sensor.id_sensor}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Nombre:</label>
+            <p>${sensor.nombre}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Tipo:</label>
+            <p>${sensor.tipo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Unidad de medida:</label>
+            <p>${sensor.unidad}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Tiempo de escaneo:</label>
+            <p>${sensor.tiempo_escaneo}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Estado:</label>
+            <p class="status ${sensor.estado === "activo" ? "status--active" : "status--inactive"}">
+              ${sensor.estado}
+            </p>
+          </div>
+          <div class="entity-details__group">
+            <label>Descripción:</label>
+            <p>${sensor.descripcion}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Fecha de Creación:</label>
+            <p>${formatDate(sensor.created_at)}</p>
+          </div>
+          <div class="entity-details__group">
+            <label>Última Actualización:</label>
+            <p>${formatDate(sensor.updated_at)}</p>
+          </div>
+        </div>
+      </div>
+      <div class="entity-details__actions">
+        <button class="btn" onclick="closeModal(viewSensorModal)">Cerrar</button>
+        <button class="btn btn--primary" onclick="editSensor('${sensor.id_sensor}')">Editar</button>
+      </div>
+    `;
+
+					document.getElementById("viewSensorModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing sensor:", error);
+					showAlert("Error al cargar detalles del sensor", "error");
+				}
+			}
+
+			// Add editSensor function before initCultivosPage
+			async function editSensor(id) {
+				try {
+					const sensor = await apiRequest(`${API_ENDPOINTS.sensores}/${id}`);
+					currentSensor = sensor;
+
+					// Update modal title
+					modalTitle.textContent = "Editar Sensor";
+
+					// Fill form with sensor data
+					document.getElementById("tipo").value = sensor.tipo;
+					document.getElementById("nombre").value = sensor.nombre;
+					document.getElementById("unidad").value = sensor.unidad;
+					document.getElementById("tiempo_escaneo").value = sensor.tiempo_escaneo;
+					document.getElementById("descripcion").value =
+						sensor.descripcion || "";
+					document.getElementById("estado").value = sensor.estado;
+
+					// Show modal
+					sensorModal.classList.add("modal--open");
+
+					// Update form submit handler for edit
+					const sensorForm = document.getElementById("sensorForm");
+					sensorForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(sensorForm);
+							const updatedData = {
+								tipo: formData.get("tipo"),
+								nombre: formData.get("nombre"),
+								unidad: formData.get("unidad"),
+								tiempo_escaneo: formData.get("tiempo_escaneo"),
+								descripcion: formData.get("descripcion"),
+								estado: formData.get("estado"),
+							};
+
+							await apiRequest(`${API_ENDPOINTS.sensores}/${id}`, {
+								method: "PUT",
+								body: JSON.stringify(updatedData),
+							});
+
+							closeModal(sensorModal);
+							showAlert("Sensor actualizado exitosamente", "success");
+							loadSensor();
+						} catch (error) {
+							console.error("Error updating sensor:", error);
+							showAlert("Error al actualizar sensor", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading sensor for edit:", error);
+					showAlert("Error al cargar datos del sensor", "error");
+				}
+			}
+
+			// Update report data generation
+			async function generateSensorReport() {
+				const statusFilter =
+					document.getElementById("reportStatusSelect").value;
+
+				try {
+					const sensores = await apiRequest(API_ENDPOINTS.sensores);
+
+					const filteredData = statusFilter
+						? sensores.filter((item) => item.estado === statusFilter)
+						: sensores;
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure without sensores 
+					reportData = filteredData.map((item) => ({
+						id_sensor: item.id_sensor,
+						nombre: item.nombre,
+						tipo: item.tipo,
+						unidad: item.unidad,
+						tiempo_escaneo: item.tiempo_escaneo,
+						estado: item.estado,
+					}));
+
+					// Update summary
+					const totalSensores = reportData.length;
+					const sensoresActivos = reportData.filter(
+						(item) => item.estado === "activo"
+					).length;
+					const sensoresInactivos = totalSensores - sensoresActivos;
+
+					document.getElementById("totalSensores").textContent = totalSensores;
+					document.getElementById("sensoresActivos").textContent =
+						sensoresActivos;
+					document.getElementById("sensoresInactivos").textContent =
+						sensoresInactivos;
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating sensor report:", error);
+					showAlert("Error al generar reporte de sensores", "error");
+				}
+			}
+
+			// Update Excel export columns
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map((item) => ({
+						ID: item.id_sensor,
+						Nombre: item.nombre,
+						Tipo: item.tipo,
+						Unidad: item.unidad,
+						Tiempo_escaneo: item.tiempo_escaneo,
+						Estado: item.estado,
+					}));
+
+					if (exportToExcel(data, "Reporte_Sensores")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Update PDF export columns
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id_sensor" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Tipo", key: "tipo" },
+						{ header: "Unidad de medida", key: "unidad" },
+						{ header: "Tiempo de escaneo", key: "tiempo_escaneo" },
+						{ header: "Estado", key: "estado" },
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Sensores")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initSensoresPage();
+			});
+
+			function initSensoresPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterType = document.getElementById("filterType");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newSensorBtn = document.getElementById("newSensorBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements
+				const sensorModal = document.getElementById("sensorModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const sensorForm = document.getElementById("sensorForm");
+				const modalClose = sensorModal.querySelector(".modal__close");
+				const modalCancel = sensorModal.querySelector(".modal__cancel");
+
+				const viewSensorModal = document.getElementById("viewSensorModal");
+				const viewModalClose = viewSensorModal.querySelector(".modal__close");
+
+				const sensorReportModal =
+					document.getElementById("sensorReportModal");
+				const reportModalClose =
+					sensorReportModal.querySelector(".modal__close");
+
+				// Load Sensores on page initialization
+				loadSensor();
+
+				// Event listeners
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				newSensorBtn.addEventListener("click", openNewSensorModal);
+				generateReportBtn.addEventListener("click", openReportModal);
+
+				// Modal event listeners
+				modalClose.addEventListener("click", () => closeModal(sensorModal));
+				modalCancel.addEventListener("click", () => closeModal(sensorModal));
+				viewModalClose.addEventListener("click", () =>
+					closeModal(viewSensorModal)
+				);
+				reportModalClose.addEventListener("click", () =>
+					closeModal(sensorReportModal)
+				);
+
+				// Form submission
+				sensorForm.addEventListener("submit", handleSensorFormSubmit);
+
+				// Apply filters
+				function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const typeFilter = filterType.value;
+
+					apiRequest(API_ENDPOINTS.sensores)
+						.then((sensores) => {
+							filteredSensores = sensores.filter((sensor) => {
+								const matchesSearch =
+									searchTerm === "" ||
+									sensor.nombre.toLowerCase().includes(searchTerm) ||
+									sensor.id_sensor.toLowerCase().includes(searchTerm);
+
+								const matchesStatus =
+									statusFilter === "" || sensor.estado === statusFilter;
+								const matchesType =
+									typeFilter === "" || sensor.tipo === typeFilter;
+
+								return matchesSearch && matchesStatus && matchesType;
+							});
+
+							currentPage = 1;
+							displaySensor(currentPage);
+							setupPagination(filteredSensores.length);
+						})
+						.catch((error) => {
+							console.error("Error applying filters:", error);
+							showAlert("Error al aplicar filtros", "error");
+						});
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterType.value = "";
+
+					loadSensor();
+				}
+
+				// Open modal for new cultivo
+				function openNewSensorModal() {
+					currentSensor = null;
+					modalTitle.textContent = "Nuevo Sensor";
+					sensorForm.reset();
+
+					// Set default values
+					document.getElementById("estado").value = "activo";
+
+					// Reset form submit handler
+					sensorForm.onsubmit = handleSensorFormSubmit;
+
+					sensorModal.classList.add("modal--open");
+				}
+
+				// Open report modal
+				function openReportModal() {
+					// Show modal
+					sensorReportModal.classList.add("modal--open");																														
+
+					// Set event listeners for report generation
+					document
+						.getElementById("generateReportDataBtn")
+						.addEventListener("click", generateSensorReport);
+					document
+						.getElementById("exportExcelBtn")
+						.addEventListener("click", exportReportToExcel);
+					document
+						.getElementById("exportPdfBtn")
+						.addEventListener("click", exportReportToPdf);
+				}
+			}
+		</script>
+	</body>
+</html>
