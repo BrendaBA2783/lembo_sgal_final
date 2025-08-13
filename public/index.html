@@ -15,7 +15,9 @@
         <div class="header__logo">LEMBO SGAL</div>
         <nav class="header__nav">
             <a href="#inicio" class="header__link">Inicio</a>
-            <a href="#acerca" class="header__link">Acerca de</a>
+            <a href="#novedades" class="header__link">Novedades</a>
+            <a href="#cultivos" class="header__link">Cultivos</a>
+            <a href="#sobre_nosotros" class="header__link" id="mod-about">Sobre nosotros</a>
             <a href="/public/pages/login.html" class="header__btn header__btn--login">Iniciar Sesión</a>
         </nav>
     </header>
@@ -23,6 +25,7 @@
     <!-- Hero Section -->
     <section class="hero" id="inicio">
         <div class="hero__content">
+            <img src="/public/img/sena-logo.png" alt="sena-logo" class="hero__logo">
             <h1 class="hero__title">Bienvenido a LEMBO SGAL</h1>
             <p class="hero__subtitle">Sistema de Gestión Agrícola Lembo de Santa Rosa</p>
             <div class="hero__buttons">
@@ -31,7 +34,7 @@
             </div>
         </div>
         <div class="hero__image">
-            <img src="img/agriculture.jpg" alt="Imagen agrícola">
+            <img src="img/agriculture.jpg" alt="imagen-agrícola">
         </div>
     </section>
 
@@ -39,28 +42,29 @@
     <section class="modules" id="modulos">
         <h2 class="modules__title">Nuestros Módulos</h2>
         <div class="modules__grid">
-            <div class="module-card">
-                <img src="/public/img/cicles.png" alt="Ciclos" class="module-card__icon">
+            <div class="module-card module-card--news" id="mod-news" tabindex="0">
+                <img src="/public/img/novedades.jpg" alt="Novedades" class="module-card__icon">
                 <h3 class="module-card__title">Novedades</h3>
                 <p class="module-card__desc">Cada día es un nuevo chisme</p>
             </div>
-            <div class="module-card">
-                <img src="/public/img/crop.png" alt="Cultivos" class="module-card__icon">
+            <div class="module-card module-card--crop" id="mod-crop" tabindex="0">
+                <img src="/public/img/crop.jpeg" alt="Cultivos" class="module-card__icon">
                 <h3 class="module-card__title">Cultivos</h3>
                 <p class="module-card__desc">Observa algunos de nuestros cultivos</p>
             </div>
-            <div class="module-card">
-                <img src="/public/img/productions.png" alt="Producciones" class="module-card__icon">
+            <div class="module-card module-card--about" id="mod-about" tabindex="0">
+                <img src="/public/img/about.png" alt="Sobre_nosotros" class="module-card__icon">
                 <h3 class="module-card__title">Sobre nosotros</h3>
                 <p class="module-card__desc">¿Tienes curiosidad?</p>
             </div>
         </div>
+        <div id="module-info" class="module-info-container"></div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
         <p class="footer__text">© 2025 LEMBO SGAL - SENA. Todos los derechos reservados.</p>
     </footer>
-
+    <script src="/public/js/actions-home.js"></script>
 </body>
 </html>

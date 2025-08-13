@@ -49,6 +49,13 @@ body {
     padding: 100px 40px 50px;
     background: var(--white);
 }
+.header__link {
+    margin-top: 0.6rem;
+}
+.hero__logo {
+    max-width: 6rem;
+    margin-right: 2rem;
+}
 .hero__title {
     font-size: 2.5em;
     color: var(--primary-green-dark);
@@ -72,7 +79,8 @@ body {
     color: var(--primary-green);
 }
 .hero__image img {
-    max-width: 400px;
+    max-width: 60rem;
+    max-height: 20rem;
     border-radius: 10px;
 }
 
@@ -81,21 +89,70 @@ body {
     padding: 50px 40px;
     text-align: center;
 }
+/* Módulos */
 .modules__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
     margin-top: 30px;
+    transition: grid-template-columns 0.4s;
 }
 .module-card {
     background: var(--white);
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 15px;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px var(--primary-green-dark);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(.4,2,.6,1);
+    z-index: 1;
+}
+.module-card:hover {
+    transform: translateY(-10px);
+    transition: transform 0.3s ease;
 }
 .module-card__icon {
-    max-width: 80px;
-    margin-bottom: 15px;
+    max-width: 10rem;
+    max-height: 6rem;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+}
+
+/* Módulo activo */
+.module-card.active {
+    transform: scale(0.90) translateY(-10px);
+    box-shadow: 0 6px 24px var(--primary-green-dark);
+    z-index: 2;
+    border: 2px solid var(--primary-green);
+}
+
+/* Módulos pequeños */
+.module-card.shrink {
+    transform: scale(0.85);
+    opacity: 0.6;
+    filter: blur(1px);
+    z-index: 0;
+}
+
+/* Contenedor de información del módulo */
+.module-info-container {
+    margin: 2rem auto 0 auto;
+    max-width: 96%;
+    background: #f8f9fa;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px var(--primary-green-light);
+    padding: 2rem 1.5rem;
+    display: none;
+    text-align: left;
+    font-size: 1.1rem;
+    animation: fadeIn 0.5s;
+}
+.module-info-container.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* About */
