@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Gestión de Producciones</title>
+		<link rel="stylesheet" href="../css/styles.css" />
+		<link rel="stylesheet" href="../css/variables.css">
+		<link rel="stylesheet" href="../css/sidebar.css">
+		<script src="../components/sidebar.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<!-- Export Libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+		<script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+		<script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+		<!-- Utils -->
+		<script src="../js/exportUtils.js"></script>
+	</head>
+	<body>
+		<!-- Sidebar (menu lateral) -->
+		<div id="sidebar-container"></div>
+		<main>
+			<div class="section">
+				<div class="section__header">
+					<h2 class="section__title" id="sidebar-trigger">
+						<img class="section__image-slider" src="../img/menu-production.png" id="sidebar-img-trigger">Gestión de Producciones
+					</h2>
+					<div class="section__actions">
+						<button id="newProduccionBtn" class="btn btn--primary">
+							Nueva Producción
+						</button>
+						<button id="generateReportBtn" class="btn btn--secondary">
+							Generar Reporte
+						</button>
+					</div>
+				</div>
+
+				<div class="filter-section">
+					<div class="filter-form">
+						<div class="form__group">
+							<input
+								type="text"
+								id="searchInput"
+								class="form__input"
+								placeholder="Buscar por nombre o ID..."
+							/>
+						</div>
+						<div class="form__group">
+							<select id="filterStatus" class="form__select">
+								<option value="">Todos los estados</option>
+								<option value="activo">Activo</option>
+								<option value="inactivo">Inactivo</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<select id="filterType" class="form__select">
+								<option value="">Todos los tipos</option>
+								<option value="hortalizas">Hortalizas</option>
+								<option value="frutas">Frutas</option>
+								<option value="cereales">Cereales</option>
+								<option value="legumbres">Legumbres</option>
+								<option value="otro">Otro</option>
+							</select>
+						</div>
+						<button id="applyFilterBtn" class="btn btn--primary">
+							Aplicar Filtros
+						</button>
+						<button id="resetFilterBtn" class="btn">Restablecer</button>
+					</div>
+				</div>
+
+				<div id="produccionesList" class="data-container">
+					<table class="table">
+						<thead class="table__header">
+							<tr>
+								<th>ID</th>
+								<th>Nombre</th>
+								<th>Tipo</th>
+								<th>Cantidad</th>
+								<th>Unidad</th>
+								<th>Fecha Cosecha</th>
+								<th>Estado</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody id="produccionesTableBody">
+							<!-- Los datos de producciones se cargarán aquí dinámicamente -->
+						</tbody>
+					</table>
+				</div>
+
+				<div id="pagination" class="pagination">
+					<!-- La paginación se generará dinámicamente -->
+				</div>
+			</div>
+
+			<!-- Modal para crear/editar producción -->
+			<div id="produccionModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 id="modalTitle" class="modal__title">Nueva Producción</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="produccionForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group">
+									<label for="nombre" class="form__label">Nombre de la Producción *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="tipo" class="form__label">Tipo de Producción *</label>
+									<select id="tipo" name="tipo" class="form__select" required>
+										<option value="">Seleccione un tipo</option>
+										<option value="hortalizas">Hortalizas</option>
+										<option value="frutas">Frutas</option>
+										<option value="cereales">Cereales</option>
+										<option value="legumbres">Legumbres</option>
+										<option value="otro">Otro</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="cantidad" class="form__label">Cantidad *</label>
+									<input type="number" id="cantidad" name="cantidad" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="unidad" class="form__label">Unidad de Medida *</label>
+									<select id="unidad" name="unidad" class="form__select" required>
+										<option value="">Seleccione una unidad</option>
+										<option value="kg">Kilogramos (kg)</option>
+										<option value="g">Gramos (g)</option>
+										<option value="ton">Toneladas (ton)</option>
+										<option value="unidades">Unidades (u)</option>
+										<option value="docenas">Docenas</option>
+										<option value="cajas">Cajas</option>
+										<option value="otro">Otro</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="fecha_cosecha" class="form__label">Fecha de Cosecha *</label>
+									<input type="date" id="fecha_cosecha" name="fecha_cosecha" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="estado" class="form__label">Estado</label>
+									<select id="estado" name="estado" class="form__select">
+										<option value="activo">Activo</option>
+										<option value="inactivo">Inactivo</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="descripcion" class="form__label">Descripción</label>
+									<textarea id="descripcion" name="descripcion" class="form__textarea"></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para visualizar producción -->
+			<div id="viewProduccionModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Detalles de la Producción</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body" id="produccionDetails">
+						<!-- Los detalles de la producción se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para reportes de producción -->
+			<div id="produccionReportModal" class="modal">
+				<div class="modal__content modal__content--large">
+					<div class="modal__header">
+						<h3 class="modal__title">Reporte de Producciones</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<div class="report-filters">
+							<div class="form__group">
+								<label for="reportStatusSelect" class="form__label">Filtrar por Estado</label>
+								<select id="reportStatusSelect" class="form__select">
+									<option value="">Todos los estados</option>
+									<option value="activo">Activo</option>
+									<option value="inactivo">Inactivo</option>
+								</select>
+							</div>
+							<div class="form__group">
+								<label for="reportTypeSelect" class="form__label">Filtrar por Tipo</label>
+								<select id="reportTypeSelect" class="form__select">
+									<option value="">Todos los tipos</option>
+									<option value="hortalizas">Hortalizas</option>
+									<option value="frutas">Frutas</option>
+									<option value="cereales">Cereales</option>
+									<option value="legumbres">Legumbres</option>
+									<option value="otro">Otro</option>
+								</select>
+							</div>
+							<button id="generateReportDataBtn" class="btn btn--primary">
+								Generar Reporte
+							</button>
+						</div>
+
+						<div class="report-content">
+							<div class="report-summary">
+								<h4>Resumen</h4>
+								<p>Total Producciones: <span id="totalProducciones">0</span></p>
+								<p>Producciones Activas: <span id="produccionesActivas">0</span></p>
+								<p>Producciones Inactivas: <span id="produccionesInactivas">0</span></p>
+								<p>Total Cantidad: <span id="totalCantidad">0</span></p>
+							</div>
+
+							<div class="report-actions">
+								<button id="exportExcelBtn" class="btn btn--secondary">
+									Exportar a Excel
+								</button>
+								<button id="exportPdfBtn" class="btn btn--secondary">
+									Exportar a PDF
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<script>
+			// API Configuration and Utils
+			const API_BASE_URL = "http://localhost:3000/api";
+			const API_ENDPOINTS = {
+				producciones: `${API_BASE_URL}/producciones`,
+			};
+
+			// Utility function to make API requests
+			async function apiRequest(url, options = {}) {
+				try {
+					const defaultOptions = {
+						headers: {
+							"Content-Type": "application/json",
+							Accept: "application/json",
+						},
+						credentials: "same-origin",
+						mode: "cors",
+					};
+
+					const response = await fetch(url, { ...defaultOptions, ...options });
+
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+
+					return await response.json();
+				} catch (error) {
+					console.error("API Request Error:", error);
+					throw error;
+				}
+			}
+
+			// Global state
+			let currentProduccion = null;
+			let isLoading = false;
+			let currentPage = 1;
+			const itemsPerPage = 10;
+			let filteredProducciones = [];
+			let reportData = [];
+
+			// Utility Functions
+			function formatDate(dateString) {
+				if (!dateString) return "";
+				return new Date(dateString).toLocaleDateString("es-ES");
+			}
+
+			function closeModal(modal) {
+				modal.classList.remove("modal--open");
+			}
+
+			// Estado global y funciones principales
+			async function getProducciones() {
+				return apiRequest(API_ENDPOINTS.producciones);
+			}
+
+			async function createProduccion(produccionData) {
+				return apiRequest(API_ENDPOINTS.producciones, {
+					method: "POST",
+					body: JSON.stringify(produccionData),
+				});
+			}
+
+			async function updateProduccion(id, produccionData) {
+				return apiRequest(`${API_ENDPOINTS.producciones}/${id}`, {
+					method: "PUT",
+					body: JSON.stringify(produccionData),
+				});
+			}
+
+			async function deleteProduccionById(id) {
+				return apiRequest(`${API_ENDPOINTS.producciones}/${id}`, {
+					method: "DELETE",
+				});
+			}
+
+			// Manejador del formulario
+			async function handleProduccionFormSubmit(e) {
+				e.preventDefault();
+
+				try {
+					if (isLoading) return;
+					isLoading = true;
+
+					const formData = new FormData(e.target);
+
+					if (!formData.get("nombre") || !formData.get("tipo") || !formData.get("cantidad") || !formData.get("unidad")) {
+						throw new Error("Por favor complete todos los campos requeridos");
+					}
+
+					const isUpdate = currentProduccion !== null;
+					const produccionData = {
+						nombre: formData.get("nombre"),
+						tipo: formData.get("tipo"),
+						cantidad: formData.get("cantidad"),
+						unidad: formData.get("unidad"),
+						fecha_cosecha: formData.get("fecha_cosecha"),
+						descripcion: formData.get("descripcion") || "",
+						estado: formData.get("estado") || "activo"
+					};
+
+					await apiRequest(
+						isUpdate ? `${API_ENDPOINTS.producciones}/${currentProduccion.id}` : API_ENDPOINTS.producciones,
+						{
+							method: isUpdate ? "PUT" : "POST",
+							body: JSON.stringify(produccionData),
+						}
+					);
+
+					closeModal(produccionModal);
+					showAlert(`Producción ${isUpdate ? "actualizada" : "creada"} exitosamente`, "success");
+					loadProducciones();
+					currentProduccion = null;
+				} catch (error) {
+					console.error("Form submission error:", error);
+					showAlert(error.message || "Error en la operación", "error");
+				} finally {
+					isLoading = false;
+				}
+			}
+
+			function showAlert(message, type = "info") {
+				const alertDiv = document.createElement("div");
+				alertDiv.className = `alert alert--${type}`;
+				alertDiv.textContent = message;
+				document.body.appendChild(alertDiv);
+
+				setTimeout(() => {
+					alertDiv.remove();
+				}, 3000);
+			}
+
+			async function viewProduccion(id) {
+				try {
+					const produccion = await apiRequest(`${API_ENDPOINTS.producciones}/${id}`);
+					const produccionDetails = document.getElementById("produccionDetails");
+
+					produccionDetails.innerHTML = `
+						<div class="entity-details">
+							<div class="entity-details__info">
+								<div class="entity-details__group">
+									<label>ID:</label>
+									<p>${produccion.id}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Nombre:</label>
+									<p>${produccion.nombre}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Tipo:</label>
+									<p>${produccion.tipo}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Cantidad:</label>
+									<p>${produccion.cantidad} ${produccion.unidad}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Fecha de Cosecha:</label>
+									<p>${formatDate(produccion.fecha_cosecha)}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Estado:</label>
+									<p class="status ${produccion.estado === "activo" ? "status--active" : "status--inactive"}">
+										${produccion.estado}
+									</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Descripción:</label>
+									<p>${produccion.descripcion || 'Sin descripción'}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Fecha de Creación:</label>
+									<p>${formatDate(produccion.created_at)}</p>
+								</div>
+								<div class="entity-details__group">
+									<label>Última Actualización:</label>
+									<p>${formatDate(produccion.updated_at)}</p>
+								</div>
+							</div>
+						</div>
+						<div class="entity-details__actions">
+							<button class="btn" onclick="closeModal(viewProduccionModal)">Cerrar</button>
+							<button class="btn btn--primary" onclick="editProduccion('${produccion.id}')">Editar</button>
+						</div>
+					`;
+
+					document.getElementById("viewProduccionModal").classList.add("modal--open");
+				} catch (error) {
+					console.error("Error viewing produccion:", error);
+					showAlert("Error al cargar detalles de la producción", "error");
+				}
+			}
+
+			async function editProduccion(id) {
+				try {
+					const produccion = await apiRequest(`${API_ENDPOINTS.producciones}/${id}`);
+					currentProduccion = produccion;
+
+					modalTitle.textContent = "Editar Producción";
+
+					// Fill form with produccion data
+					document.getElementById("nombre").value = produccion.nombre;
+					document.getElementById("tipo").value = produccion.tipo;
+					document.getElementById("cantidad").value = produccion.cantidad;
+					document.getElementById("unidad").value = produccion.unidad;
+					document.getElementById("fecha_cosecha").value = produccion.fecha_cosecha;
+					document.getElementById("descripcion").value = produccion.descripcion || "";
+					document.getElementById("estado").value = produccion.estado;
+
+					produccionModal.classList.add("modal--open");
+
+					const produccionForm = document.getElementById("produccionForm");
+					produccionForm.onsubmit = async (e) => {
+						e.preventDefault();
+						if (isLoading) return;
+						isLoading = true;
+
+						try {
+							const formData = new FormData(produccionForm);
+							const updatedData = {
+								nombre: formData.get("nombre"),
+								tipo: formData.get("tipo"),
+								cantidad: formData.get("cantidad"),
+								unidad: formData.get("unidad"),
+								fecha_cosecha: formData.get("fecha_cosecha"),
+								descripcion: formData.get("descripcion"),
+								estado: formData.get("estado")
+							};
+
+							await apiRequest(`${API_ENDPOINTS.producciones}/${id}`, {
+								method: "PUT",
+								headers: {
+									"Content-Type": "application/json"
+								},
+								body: JSON.stringify(updatedData)
+							});
+
+							closeModal(produccionModal);
+							showAlert("Producción actualizada exitosamente", "success");
+							loadProducciones();
+							currentProduccion = null;
+						} catch (error) {
+							console.error("Error updating produccion:", error);
+							showAlert("Error al actualizar producción", "error");
+						} finally {
+							isLoading = false;
+						}
+					};
+				} catch (error) {
+					console.error("Error loading produccion for edit:", error);
+					showAlert("Error al cargar datos de la producción", "error");
+				}
+			}
+
+			async function toggleProduccionStatus(id) {
+				try {
+					const produccion = await apiRequest(`${API_ENDPOINTS.producciones}/${id}`);
+					const newStatus = produccion.estado === "activo" ? "inactivo" : "activo";
+
+					await apiRequest(`${API_ENDPOINTS.producciones}/${id}`, {
+						method: "PUT",
+						body: JSON.stringify({
+							nombre: produccion.nombre,
+							tipo: produccion.tipo,
+							cantidad: produccion.cantidad,
+							unidad: produccion.unidad,
+							fecha_cosecha: produccion.fecha_cosecha,
+							descripcion: produccion.descripcion,
+							estado: newStatus
+						}),
+					});
+
+					showAlert(`Producción ${newStatus === "activo" ? "activada" : "desactivada"} exitosamente`, "success");
+					loadProducciones();
+				} catch (error) {
+					console.error("Error toggling produccion status:", error);
+					showAlert("Error al cambiar estado de la producción", "error");
+				}
+			}
+
+			function addActionButtonListeners() {
+				const viewButtons = document.querySelectorAll(".action-btn--view");
+				const editButtons = document.querySelectorAll(".action-btn--edit");
+				const toggleButtons = document.querySelectorAll(".action-btn--enable, .action-btn--disable");
+
+				viewButtons.forEach((button) => {
+					button.addEventListener("click", () => viewProduccion(button.getAttribute("data-id")));
+				});
+
+				editButtons.forEach((button) => {
+					button.addEventListener("click", () => editProduccion(button.getAttribute("data-id")));
+				});
+
+				toggleButtons.forEach((button) => {
+					button.addEventListener("click", () => toggleProduccionStatus(button.getAttribute("data-id")));
+				});
+			}
+
+			// Display producciones with pagination
+			function displayProducciones(page) {
+				const produccionesTableBody = document.getElementById("produccionesTableBody");
+				produccionesTableBody.innerHTML = "";
+
+				const startIndex = (page - 1) * itemsPerPage;
+				const endIndex = startIndex + itemsPerPage;
+				const paginatedProducciones = filteredProducciones.slice(startIndex, endIndex);
+
+				if (paginatedProducciones.length === 0) {
+					produccionesTableBody.innerHTML = `
+						<tr>
+							<td colspan="8" class="table__no-data">No se encontraron producciones</td>
+						</tr>
+					`;
+					return;
+				}
+
+				paginatedProducciones.forEach((produccion) => {
+					const row = document.createElement("tr");
+					row.className = "table__row";
+					row.innerHTML = `
+						<td class="table__cell">${produccion.id}</td>
+						<td class="table__cell">${produccion.nombre}</td>
+						<td class="table__cell">${produccion.tipo}</td>
+						<td class="table__cell">${produccion.cantidad}</td>
+						<td class="table__cell">${produccion.unidad}</td>
+						<td class="table__cell">${formatDate(produccion.fecha_cosecha)}</td>
+						<td class="table__cell">
+							<span class="status ${produccion.estado === "activo" ? "status--active" : "status--inactive"}">
+								${produccion.estado}
+							</span>
+						</td>
+						<td class="table__cell table__actions">
+							<button class="action-btn action-btn--view" data-id="${produccion.id}" title="Ver detalles">
+								<span class="material-icons">visibility</span>
+							</button>
+							<button class="action-btn action-btn--edit" data-id="${produccion.id}" title="Editar producción">
+								<span class="material-icons">edit</span>
+							</button>
+							<button class="action-btn ${produccion.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
+									data-id="${produccion.id}"
+									title="${produccion.estado === "activo" ? "Deshabilitar" : "Habilitar"} producción">
+								<span class="material-icons">${produccion.estado === "activo" ? "block" : "check_circle"}</span>
+							</button>
+						</td>
+					`;
+					produccionesTableBody.appendChild(row);
+				});
+				setupPagination(filteredProducciones.length);
+				addActionButtonListeners();
+			}
+
+			// Setup pagination
+			function setupPagination(totalItems) {
+				const pagination = document.getElementById("pagination");
+				const totalPages = Math.ceil(totalItems / itemsPerPage);
+				pagination.innerHTML = "";
+
+				if (totalPages <= 1) return;
+
+				// Previous button
+				const prevBtn = document.createElement("button");
+				prevBtn.className = `pagination__btn ${currentPage === 1 ? "pagination__btn--disabled" : ""}`;
+				prevBtn.textContent = "Anterior";
+				prevBtn.disabled = currentPage === 1;
+				prevBtn.addEventListener("click", () => {
+					if (currentPage > 1) {
+						currentPage--;
+						displayProducciones(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(prevBtn);
+
+				// Page buttons
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+				if (endPage - startPage + 1 < maxButtons) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+
+				for (let i = startPage; i <= endPage; i++) {
+					const pageBtn = document.createElement("button");
+					pageBtn.className = `pagination__btn ${i === currentPage ? "pagination__btn--active" : ""}`;
+					pageBtn.textContent = i;
+					pageBtn.addEventListener("click", () => {
+						currentPage = i;
+						displayProducciones(currentPage);
+						setupPagination(totalItems);
+					});
+					pagination.appendChild(pageBtn);
+				}
+
+				// Next button
+				const nextBtn = document.createElement("button");
+				nextBtn.className = `pagination__btn ${currentPage === totalPages ? "pagination__btn--disabled" : ""}`;
+				nextBtn.textContent = "Siguiente";
+				nextBtn.disabled = currentPage === totalPages;
+				nextBtn.addEventListener("click", () => {
+					if (currentPage < totalPages) {
+						currentPage++;
+						displayProducciones(currentPage);
+						setupPagination(totalItems);
+					}
+				});
+				pagination.appendChild(nextBtn);
+			}
+
+			// Load producciones
+			async function loadProducciones() {
+				try {
+					const producciones = await apiRequest(API_ENDPOINTS.producciones);
+					filteredProducciones = producciones;
+					currentPage = 1;
+					displayProducciones(currentPage);
+				} catch (error) {
+					console.error("Error loading producciones:", error);
+					document.getElementById("produccionesTableBody").innerHTML = `
+						<tr>
+							<td colspan="8" class="table__no-data">Error al cargar las producciones</td>
+						</tr>
+					`;
+				}
+			}
+
+			// Report generation functions
+			async function generateProduccionReport() {
+				const statusFilter = document.getElementById("reportStatusSelect").value;
+				const typeFilter = document.getElementById("reportTypeSelect").value;
+
+				try {
+					const producciones = await apiRequest(API_ENDPOINTS.producciones);
+
+					const filteredData = producciones.filter(item => {
+						const matchesStatus = !statusFilter || item.estado === statusFilter;
+						const matchesType = !typeFilter || item.tipo === typeFilter;
+						return matchesStatus && matchesType;
+					});
+
+					if (filteredData.length === 0) {
+						showAlert("No hay datos para generar el reporte", "warning");
+						return;
+					}
+
+					// Update report data structure
+					reportData = filteredData.map(item => ({
+						id: item.id,
+						nombre: item.nombre,
+						tipo: item.tipo,
+						cantidad: item.cantidad,
+						unidad: item.unidad,
+						fecha_cosecha: formatDate(item.fecha_cosecha),
+						estado: item.estado,
+						descripcion: item.descripcion || 'Sin descripción'
+					}));
+
+					// Update summary
+					const totalProducciones = reportData.length;
+					const produccionesActivas = reportData.filter(item => item.estado === "activo").length;
+					const produccionesInactivas = totalProducciones - produccionesActivas;
+					const totalCantidad = reportData.reduce((sum, item) => sum + parseFloat(item.cantidad), 0);
+
+					document.getElementById("totalProducciones").textContent = totalProducciones;
+					document.getElementById("produccionesActivas").textContent = produccionesActivas;
+					document.getElementById("produccionesInactivas").textContent = produccionesInactivas;
+					document.getElementById("totalCantidad").textContent = totalCantidad.toFixed(2);
+
+					showAlert("Reporte generado exitosamente", "success");
+				} catch (error) {
+					console.error("Error generating produccion report:", error);
+					showAlert("Error al generar reporte de producciones", "error");
+				}
+			}
+
+			function exportReportToExcel() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const data = reportData.map(item => ({
+						ID: item.id,
+						Nombre: item.nombre,
+						Tipo: item.tipo,
+						Cantidad: item.cantidad,
+						Unidad: item.unidad,
+						"Fecha Cosecha": item.fecha_cosecha,
+						Estado: item.estado,
+						Descripción: item.descripcion
+					}));
+
+					if (exportToExcel(data, "Reporte_Producciones")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			function exportReportToPdf() {
+				try {
+					if (!reportData || reportData.length === 0) {
+						showAlert("Primero debe generar el reporte", "warning");
+						return;
+					}
+
+					const columns = [
+						{ header: "ID", key: "id" },
+						{ header: "Nombre", key: "nombre" },
+						{ header: "Tipo", key: "tipo" },
+						{ header: "Cantidad", key: "cantidad" },
+						{ header: "Unidad", key: "unidad" },
+						{ header: "Fecha Cosecha", key: "fecha_cosecha" },
+						{ header: "Estado", key: "estado" },
+						{ header: "Descripción", key: "descripcion" }
+					];
+
+					if (exportToPDF(reportData, columns, "Reporte_Producciones")) {
+						showAlert("Reporte exportado exitosamente", "success");
+					}
+				} catch (error) {
+					console.error("Error al exportar:", error);
+					showAlert("Error al exportar el reporte", "error");
+				}
+			}
+
+			// Initialize page
+			document.addEventListener("DOMContentLoaded", () => {
+				initProduccionesPage();
+			});
+
+			function initProduccionesPage() {
+				// DOM elements
+				const searchInput = document.getElementById("searchInput");
+				const filterStatus = document.getElementById("filterStatus");
+				const filterType = document.getElementById("filterType");
+				const applyFilterBtn = document.getElementById("applyFilterBtn");
+				const resetFilterBtn = document.getElementById("resetFilterBtn");
+				const newProduccionBtn = document.getElementById("newProduccionBtn");
+				const generateReportBtn = document.getElementById("generateReportBtn");
+
+				// Modal elements setup and event listeners
+				const produccionModal = document.getElementById("produccionModal");
+				const viewProduccionModal = document.getElementById("viewProduccionModal");
+				const produccionReportModal = document.getElementById("produccionReportModal");
+				const modalTitle = document.getElementById("modalTitle");
+				const produccionForm = document.getElementById("produccionForm");
+				const modalCloses = document.querySelectorAll(".modal__close");
+				const modalCancel = produccionModal.querySelector(".modal__cancel");
+
+				// Add close functionality to all modals
+				modalCloses.forEach(closeBtn => {
+					closeBtn.addEventListener("click", () => {
+						currentProduccion = null;
+						produccionForm.reset();
+						closeModal(closeBtn.closest(".modal"));
+					});
+				});
+
+				// Initial load
+				loadProducciones();
+
+				// Update displayProducciones to add action listeners after rendering
+				const originalDisplayProducciones = displayProducciones;
+				displayProducciones = function(page) {
+					originalDisplayProducciones(page);
+					addActionButtonListeners();
+				};
+
+				// Apply filters
+				async function applyFilters() {
+					const searchTerm = searchInput.value.toLowerCase();
+					const statusFilter = filterStatus.value;
+					const typeFilter = filterType.value;
+
+					try {
+						const producciones = await apiRequest(API_ENDPOINTS.producciones);
+						filteredProducciones = producciones.filter((produccion) => {
+							const matchesSearch =
+								searchTerm === "" ||
+								produccion.nombre.toLowerCase().includes(searchTerm) ||
+								produccion.id.toString().includes(searchTerm);
+							
+							const matchesStatus =
+								statusFilter === "" || produccion.estado === statusFilter;
+							
+							const matchesType =
+								typeFilter === "" || produccion.tipo === typeFilter;
+
+							return matchesSearch && matchesStatus && matchesType;
+						});
+
+						currentPage = 1;
+						displayProducciones(currentPage);
+						setupPagination(filteredProducciones.length);
+					} catch (error) {
+						console.error("Error applying filters:", error);
+						showAlert("Error al aplicar filtros", "error");
+					}
+				}
+
+				// Reset filters
+				function resetFilters() {
+					searchInput.value = "";
+					filterStatus.value = "";
+					filterType.value = "";
+					loadProducciones();
+				}
+
+				// Event listeners for filters
+				applyFilterBtn.addEventListener("click", applyFilters);
+				resetFilterBtn.addEventListener("click", resetFilters);
+				searchInput.addEventListener("keyup", applyFilters);
+				filterStatus.addEventListener("change", applyFilters);
+				filterType.addEventListener("change", applyFilters);
+
+				// Event listeners
+				modalCancel.addEventListener("click", () => closeModal(produccionModal));
+				produccionForm.addEventListener("submit", handleProduccionFormSubmit);
+				newProduccionBtn.addEventListener("click", () => {
+					currentProduccion = null;
+					modalTitle.textContent = "Nueva Producción";
+					produccionForm.reset();
+					produccionModal.classList.add("modal--open");
+				});
+
+				generateReportBtn.addEventListener("click", () => {
+					produccionReportModal.classList.add("modal--open");
+
+					// Set up report generation listeners
+					document.getElementById("generateReportDataBtn").addEventListener("click", generateProduccionReport);
+					document.getElementById("exportExcelBtn").addEventListener("click", exportReportToExcel);
+					document.getElementById("exportPdfBtn").addEventListener("click", exportReportToPdf);
+				});
+
+				// Add close functionality for report modal
+				produccionReportModal.querySelector(".modal__close").addEventListener("click", () => {
+					closeModal(produccionReportModal);
+				});
+			}
+		</script>
+		<script>
+		// Sidebar integration
+		document.addEventListener('DOMContentLoaded', function() {
+			// Cargar el sidebar.html en el contenedor
+			fetch('../components/sidebar.html')
+				.then(res => res.text())
+				.then(html => {
+					document.getElementById('sidebar-container').innerHTML = html;
+					window.initSidebar && window.initSidebar(); // por si el JS lo requiere
+				});
+		});
+		</script>
+	</body>
+</html>

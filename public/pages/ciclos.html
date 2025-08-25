@@ -6,6 +6,8 @@
 		<title>Gestión de Ciclos</title>
 		<link rel="stylesheet" href="../css/styles.css" />
 		<link rel="stylesheet" href="../css/variables.css">
+		<link rel="stylesheet" href="../css/sidebar.css">
+		<script src="../components/sidebar.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<!-- Export Libraries -->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -15,10 +17,13 @@
 		<script src="../js/exportUtils.js"></script>
 	</head>
 	<body>
-		<main>
-			<div class="section">
-				<div class="section__header">
-					<h2 class="section__title">Gestión de Ciclos de Cultivo</h2>
+	<div id="sidebar-container"></div>
+	<main>
+		   <div class="section">
+				  <div class="section__header">
+					  <h2 class="section__title" id="sidebar-trigger">
+							<img class="section__image-slider" src="../img/menu-cicle.png" id="sidebar-img-trigger">Gestión de Ciclos de Cultivo
+					  </h2>
 					<div class="section__actions">
 						<button id="newCicloBtn" class="btn btn--primary">
 							Nuevo Ciclo
@@ -916,6 +921,16 @@
 						.addEventListener("click", exportReportToPdf);
 				}
 			}
-		</script>
+		   </script>
+		   <script>
+		   document.addEventListener('DOMContentLoaded', function() {
+			   fetch('../components/sidebar.html')
+				   .then(res => res.text())
+				   .then(html => {
+					   document.getElementById('sidebar-container').innerHTML = html;
+					   window.initSidebar && window.initSidebar();
+				   });
+		   });
+		   </script>
 	</body>
 </html>

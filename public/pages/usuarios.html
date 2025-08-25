@@ -6,6 +6,8 @@
 		<title>Gestión de Usuarios</title>
 		<link rel="stylesheet" href="../css/styles.css" />
 		<link rel="stylesheet" href="../css/variables.css">
+		<link rel="stylesheet" href="../css/sidebar.css">
+		<script src="../components/sidebar.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<!-- Export Libraries -->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -15,23 +17,28 @@
 		<script src="../js/exportUtils.js"></script>
 	</head>
 	<body>
+		<!-- Sidebar (menu lateral) -->
+		<div id="sidebar-container"></div>
 		<main>
 			<div class="section">
 				<div class="section__header">
-					<h2 class="section__title">Gestión de Usuarios</h2>
+					<h2 class="section__title" id="sidebar-trigger">
+						<img class="section__image-slider" src="../img/menu-user.png" id="sidebar-img-trigger">Gestión de Usuarios
+					</h2>
+
 					<div class="section__actions">
 						<div class="section__actions">
-						<button id="newUserBtn" class="btn btn--primary">
-							Nuevo Usuario
-						</button>
-						<button id="generateReportBtn" class="btn btn--secondary">
-							Generar Reporte
-						</button>
-					</div>
+							<button id="newUserBtn" class="btn btn--primary">
+								Nuevo Usuario
+							</button>
+							<button id="generateReportBtn" class="btn btn--secondary">
+								Generar Reporte
+							</button>
+						</div>
 					</div>
 				</div>
 
-				 <div class="filter-section">
+				<div class="filter-section">
 					<div class="filter-form">
 						<div class="form__group">
 							<input type="text" id="searchInput" class="form__input" placeholder="Buscar por nombre o correo..." />
@@ -831,6 +838,18 @@
 					closeModal(userReportModal);
 				});
 			}
-		</script>
+		   </script>
+		   <script>
+		   // Sidebar integration
+		   document.addEventListener('DOMContentLoaded', function() {
+			   // Cargar el sidebar.html en el contenedor
+			   fetch('../components/sidebar.html')
+				   .then(res => res.text())
+				   .then(html => {
+					   document.getElementById('sidebar-container').innerHTML = html;
+					   window.initSidebar && window.initSidebar(); // por si el JS lo requiere
+				   });
+		   });
+		   </script>
 	</body>
 </html>

@@ -6,6 +6,8 @@
 		<title>Gestión de Insumos</title>
 		<link rel="stylesheet" href="../css/styles.css" />
 		<link rel="stylesheet" href="../css/variables.css">
+		<link rel="stylesheet" href="../css/sidebar.css">
+		<script src="../components/sidebar.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<!-- Export Libraries -->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -14,11 +16,15 @@
 		<!-- Utils -->
 		<script src="../js/exportUtils.js"></script>
 	</head>
-	<body>
-		<main>
+		<body>
+		<!-- Sidebar (menu lateral) -->
+		<div id="sidebar-container"></div>
+	<main>
 			<div class="section">
 				<div class="section__header">
-					<h2 class="section__title">Gestión de Insumos</h2>
+					<h2 class="section__title" id="sidebar-trigger">
+						<img class="section__image-slider" src="../img/menu-supplies.png" id="sidebar-img-trigger">Gestión de Insumos
+					</h2>
 					<div class="section__actions">
 						<button id="newInsumoBtn" class="btn btn--primary">
 							Nuevo Insumo
@@ -962,6 +968,18 @@
 						.addEventListener("click", exportReportToPdf);
 				}
 			}
+		</script>
+		<script>
+		// Sidebar integration
+		document.addEventListener('DOMContentLoaded', function() {
+			// Cargar el sidebar.html en el contenedor
+			fetch('../components/sidebar.html')
+				.then(res => res.text())
+				.then(html => {
+					document.getElementById('sidebar-container').innerHTML = html;
+					window.initSidebar && window.initSidebar(); // por si el JS lo requiere
+				});
+		});
 		</script>
 	</body>
 </html>
