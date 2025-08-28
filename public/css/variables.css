@@ -1,6 +1,10 @@
 /* Base Styles */
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 :root {
+    /* Colores neutros */
+    --black: #000000;
+    --white: #ffffff;
+    
     /* Verde principal */
     --primary-green: #2e7d32;
     --primary-green-light: #60ad5e;
@@ -69,6 +73,9 @@
 
     /* Letra */
     --font-family: 'Work Sans', sans-serif;
+
+    /* Color gov.co */
+    --govco-blue: #0A43B5;
 }
 
 * {

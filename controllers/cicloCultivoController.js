@@ -8,7 +8,7 @@ exports.getAllCiclosCultivo = async (req, res) => {
     let query = `
       SELECT cc.*, c.nombre AS nombre_cultivo
       FROM ciclos_cultivo cc
-      JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
+      LEFT JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
     `;
     
     let params = [];
@@ -21,7 +21,17 @@ exports.getAllCiclosCultivo = async (req, res) => {
     query += ' ORDER BY cc.created_at DESC';
     
     const [rows] = await pool.query(query, params);
-    res.json(rows);
+    
+    // Clean up date fields and handle null values
+    const cleanedRows = rows.map(row => ({
+      ...row,
+      fecha_inicial: row.fecha_inicial ? new Date(row.fecha_inicial).toISOString().split('T')[0] : null,
+      fecha_final: row.fecha_final ? new Date(row.fecha_final).toISOString().split('T')[0] : null,
+      novedades: row.novedades || null,
+      nombre_cultivo: row.nombre_cultivo || 'Sin cultivo asignado'
+    }));
+    
+    res.json(cleanedRows);
   } catch (error) {
     console.error('Error fetching ciclos cultivo:', error);
     res.status(500).json({ message: 'Error al obtener ciclos de cultivo', error: error.message });
@@ -34,7 +44,7 @@ exports.getCicloCultivoById = async (req, res) => {
     const [rows] = await pool.query(`
       SELECT cc.*, c.nombre AS nombre_cultivo
       FROM ciclos_cultivo cc
-      JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
+      LEFT JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
       WHERE cc.id_ciclo = ?
     `, [req.params.id]);
     
@@ -53,6 +63,12 @@ exports.getCicloCultivoById = async (req, res) => {
     const cicloCultivo = rows[0];
     cicloCultivo.insumos = insumos;
     
+    // Clean up date fields
+    cicloCultivo.fecha_inicial = cicloCultivo.fecha_inicial ? new Date(cicloCultivo.fecha_inicial).toISOString().split('T')[0] : null;
+    cicloCultivo.fecha_final = cicloCultivo.fecha_final ? new Date(cicloCultivo.fecha_final).toISOString().split('T')[0] : null;
+    cicloCultivo.novedades = cicloCultivo.novedades || null;
+    cicloCultivo.nombre_cultivo = cicloCultivo.nombre_cultivo || 'Sin cultivo asignado';
+    
     res.json(cicloCultivo);
   } catch (error) {
     console.error('Error fetching ciclo cultivo:', error);
@@ -63,46 +79,72 @@ exports.getCicloCultivoById = async (req, res) => {
 // Create ciclo cultivo
 exports.createCicloCultivo = async (req, res) => {
   try {
+    console.log('Creating ciclo cultivo with body:', JSON.stringify(req.body, null, 2));
+    console.log('Body type:', typeof req.body);
+    console.log('Body keys:', Object.keys(req.body));
+    
     const { 
-      id_ciclo, 
       nombre, 
       descripcion, 
-      fecha_inicial, 
-      fecha_final, 
+      fecha_inicio, 
+      fecha_fin, 
       novedades, 
-      id_cultivo,
-      insumos
+      estado = 'activo',
+      id_cultivo = null
     } = req.body;
     
+    console.log('Extracted fields:', { 
+      nombre, 
+      fecha_inicio, 
+      fecha_fin, 
+      descripcion, 
+      novedades, 
+      estado, 
+      id_cultivo 
+    });
+    
+    console.log('Field types:', {
+      nombre: typeof nombre,
+      fecha_inicio: typeof fecha_inicio,
+      fecha_fin: typeof fecha_fin
+    });
+    
     // Validate required fields
-    if (!id_ciclo || !nombre || !fecha_inicial || !fecha_final || !id_cultivo) {
-      return res.status(400).json({ message: 'Faltan campos requeridos' });
+    if (!nombre || !fecha_inicio || !fecha_fin) {
+      console.log('Validation failed:', { 
+        nombre: !!nombre, 
+        fecha_inicio: !!fecha_inicio, 
+        fecha_fin: !!fecha_fin 
+      });
+      console.log('Empty values:', {
+        nombre: nombre === '',
+        fecha_inicio: fecha_inicio === '',
+        fecha_fin: fecha_fin === ''
+      });
+      return res.status(400).json({ 
+        message: 'Faltan campos requeridos',
+        details: {
+          nombre: !nombre ? 'Campo requerido' : null,
+          fecha_inicio: !fecha_inicio ? 'Campo requerido' : null,
+          fecha_fin: !fecha_fin ? 'Campo requerido' : null
+        }
+      });
     }
     
-    // Check if cultivo exists
-    const [cultivo] = await pool.query('SELECT * FROM cultivos WHERE id_cultivo = ?', [id_cultivo]);
+    // Generate unique ID for ciclo
+    const id_ciclo = `CIC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    if (cultivo.length === 0) {
-      return res.status(404).json({ message: 'Cultivo no encontrado' });
-    }
+    console.log('Generated ID:', id_ciclo);
     
     // Create ciclo cultivo
     const [result] = await pool.query(
       `INSERT INTO ciclos_cultivo 
-       (id_ciclo, nombre, descripcion, fecha_inicial, fecha_final, novedades, id_cultivo) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id_ciclo, nombre, descripcion, fecha_inicial, fecha_final, novedades, id_cultivo]
+       (id_ciclo, nombre, descripcion, fecha_inicial, fecha_final, novedades, estado, id_cultivo) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id_ciclo, nombre, descripcion, fecha_inicio, fecha_fin, novedades, estado, id_cultivo]
     );
     
-    // Add associated insumos if provided
-    if (insumos && Array.isArray(insumos) && insumos.length > 0) {
-      for (const insumoId of insumos) {
-        await pool.query(
-          'INSERT INTO insumo_ciclo (id_insumo, id_ciclo_cultivo, id_cultivo) VALUES (?, ?, ?)',
-          [insumoId, id_ciclo, id_cultivo]
-        );
-      }
-    }
+    console.log('Insert result:', result);
     
     res.status(201).json({ 
       message: 'Ciclo de cultivo creado exitosamente',
@@ -121,17 +163,19 @@ exports.updateCicloCultivo = async (req, res) => {
     const { 
       nombre, 
       descripcion, 
-      fecha_inicial, 
-      fecha_final, 
-      novedades 
+      fecha_inicio, 
+      fecha_fin, 
+      novedades,
+      estado,
+      id_cultivo
     } = req.body;
     const id_ciclo = req.params.id;
     
     const [result] = await pool.query(
       `UPDATE ciclos_cultivo 
-       SET nombre = ?, descripcion = ?, fecha_inicial = ?, fecha_final = ?, novedades = ? 
+       SET nombre = ?, descripcion = ?, fecha_inicial = ?, fecha_final = ?, novedades = ?, estado = ?, id_cultivo = ?
        WHERE id_ciclo = ?`,
-      [nombre, descripcion, fecha_inicial, fecha_final, novedades, id_ciclo]
+      [nombre, descripcion, fecha_inicio, fecha_fin, novedades, estado, id_cultivo, id_ciclo]
     );
     
     if (result.affectedRows === 0) {
@@ -207,22 +251,17 @@ exports.getCiclosByCultivo = async (req, res) => {
 // Generate ciclo cultivo report
 exports.generateCicloCultivoReport = async (req, res) => {
   try {
-    const { id_cultivo, estado } = req.query;
+    const { estado } = req.query;
     
     let query = `
       SELECT cc.*, c.nombre AS nombre_cultivo,
              (SELECT COUNT(*) FROM insumo_ciclo ic WHERE ic.id_ciclo_cultivo = cc.id_ciclo) AS num_insumos
       FROM ciclos_cultivo cc
-      JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
+      LEFT JOIN cultivos c ON cc.id_cultivo = c.id_cultivo
     `;
     
     let params = [];
     let conditions = [];
-    
-    if (id_cultivo) {
-      conditions.push('cc.id_cultivo = ?');
-      params.push(id_cultivo);
-    }
     
     if (estado) {
       conditions.push('cc.estado = ?');
@@ -237,7 +276,16 @@ exports.generateCicloCultivoReport = async (req, res) => {
     
     const [rows] = await pool.query(query, params);
     
-    res.json(rows);
+    // Clean up date fields
+    const cleanedRows = rows.map(row => ({
+      ...row,
+      fecha_inicial: row.fecha_inicial ? new Date(row.fecha_inicial).toISOString().split('T')[0] : null,
+      fecha_final: row.fecha_final ? new Date(row.fecha_final).toISOString().split('T')[0] : null,
+      novedades: row.novedades || null,
+      nombre_cultivo: row.nombre_cultivo || 'Sin cultivo asignado'
+    }));
+    
+    res.json(cleanedRows);
   } catch (error) {
     console.error('Error generating ciclo cultivo report:', error);
     res.status(500).json({ message: 'Error al generar reporte de ciclos de cultivo', error: error.message });

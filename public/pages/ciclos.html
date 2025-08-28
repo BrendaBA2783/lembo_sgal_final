@@ -205,7 +205,7 @@
 				cultivos: `${API_BASE_URL}/cultivos`,
 				sensores: `${API_BASE_URL}/sensores`,
 				insumos: `${API_BASE_URL}/insumos`,
-				ciclos: `${API_BASE_URL}/ciclos`,
+				   ciclos: `${API_BASE_URL}/ciclos-cultivo`,
 			};
 
 			// Update apiRequest function to handle CORS properly
@@ -214,18 +214,23 @@
 					const defaultOptions = {
 						headers: {
 							"Content-Type": "application/json",
-							// Add CORS headers
 							Accept: "application/json",
 						},
-						// Change credentials mode
-						credentials: "same-origin", // or remove this line if not using cookies
 						mode: "cors",
 					};
 
 					const response = await fetch(url, { ...defaultOptions, ...options });
 
 					if (!response.ok) {
-						throw new Error(`HTTP error! status: ${response.status}`);
+						const errorText = await response.text();
+						let errorMessage = `HTTP error! status: ${response.status}`;
+						try {
+							const errorData = JSON.parse(errorText);
+							errorMessage = errorData.message || errorMessage;
+						} catch (e) {
+							errorMessage = errorText || errorMessage;
+						}
+						throw new Error(errorMessage);
 					}
 
 					const data = await response.json();
@@ -247,7 +252,14 @@
 			// Utility Functions
 			function formatDate(dateString) {
 				if (!dateString) return "";
-				return new Date(dateString).toLocaleDateString("es-ES");
+				try {
+					const date = new Date(dateString);
+					if (isNaN(date.getTime())) return "";
+					return date.toLocaleDateString("es-ES");
+				} catch (error) {
+					console.error("Error formatting date:", dateString, error);
+					return "";
+				}
 			}
 
 			function closeModal(modal) {
@@ -281,8 +293,8 @@
 					row.innerHTML = `
           <td class="table__cell">${ciclo.id_ciclo}</td>
           <td class="table__cell">${ciclo.nombre}</td>
-          <td class="table__cell">${formatDate(ciclo.fecha_inicio)}</td>
-          <td class="table__cell">${formatDate(ciclo.fecha_fin)}</td>
+          <td class="table__cell">${formatDate(ciclo.fecha_inicial)}</td>
+          <td class="table__cell">${formatDate(ciclo.fecha_final)}</td>
           <td class="table__cell">${ciclo.descripcion}</td>
           <td class="table__cell">${ciclo.novedades}</td>
           <td class="table__cell">
@@ -346,8 +358,8 @@
 					const ciclo = await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`);
 					const newStatus = ciclo.estado === "activo" ? "inactivo" : "activo";
 
-					await apiRequest(`${API_ENDPOINTS.ciclos}/${id}`, {
-						method: "PUT",
+					await apiRequest(`${API_ENDPOINTS.ciclos}/${id}/status`, {
+						method: "PATCH",
 						body: JSON.stringify({ estado: newStatus }),
 					});
 
@@ -367,12 +379,15 @@
 			// Update loadCiclos to use setupPagination from global scope
 			async function loadCiclos() {
 				try {
+					console.log("Loading ciclos from:", API_ENDPOINTS.ciclos);
 					const ciclos = await apiRequest(API_ENDPOINTS.ciclos);
 
 					if (!Array.isArray(ciclos)) {
+						console.error("Invalid response format:", ciclos);
 						throw new Error("Formato de respuesta inválido");
 					}
 
+					console.log("Ciclos loaded:", ciclos);
 					filteredCiclos = [...ciclos];
 					currentPage = 1;
 					displayCiclos(currentPage);
@@ -391,6 +406,9 @@
           </tr>
         `;
 					pagination.innerHTML = "";
+					
+					// Show alert for user
+					showAlert(`Error al cargar ciclos: ${error.message}`, "error");
 				}
 			}
 
@@ -508,7 +526,7 @@
 					// Create ciclo data object matching database schema
 					const cicloData = {
 						nombre: formData.get("nombre"),
-						novedad: formData.get("novedades"),
+						novedades: formData.get("novedades"),
 						fecha_inicio: fecha_inicio,
 						fecha_fin: fecha_fin,
 						descripcion: formData.get("descripcion") || "",
@@ -590,15 +608,15 @@
           </div>
           <div class="entity-details__group">
             <label>Novedades:</label>
-            <p>${ciclo.novedad}</p>
+            <p>${ciclo.novedades || "Sin novedades"}</p>
           </div>
           <div class="entity-details__group">
             <label>Fecha inicio:</label>
-            <p>${formatDate(ciclo.fecha_inicio)}</p>
+            <p>${formatDate(ciclo.fecha_inicial)}</p>
           </div>
           <div class="entity-details__group">
             <label>Fecha fin:</label>
-            <p>${formatDate(ciclo.fecha_fin)}</p>
+            <p>${formatDate(ciclo.fecha_final)}</p>
           </div>
           <div class="entity-details__group">
             <label>Estado:</label>
@@ -644,11 +662,11 @@
 
 					// Fill form with ciclo data
 					document.getElementById("nombre").value = ciclo.nombre;
-					document.getElementById("novedades").value = ciclo.novedad; 
+					document.getElementById("novedades").value = ciclo.novedades || ""; 
 					document.getElementById("fecha_inicio").value =
-						ciclo.fecha_inicio.split("T")[0];
+						ciclo.fecha_inicial ? ciclo.fecha_inicial.split("T")[0] : "";
 					document.getElementById("fecha_fin").value =
-						ciclo.fecha_fin.split("T")[0];
+						ciclo.fecha_final ? ciclo.fecha_final.split("T")[0] : "";
 					document.getElementById("descripcion").value =
 						ciclo.descripcion || "";
 					document.getElementById("estado").value = ciclo.estado;
@@ -667,7 +685,7 @@
 							const formData = new FormData(cicloForm);
 							const updatedData = {
 								nombre: formData.get("nombre"),
-								novedad: formData.get("novedades"),
+								novedades: formData.get("novedades"),
 								fecha_inicio: formData.get("fecha_inicio"),
 								fecha_fin: formData.get("fecha_fin"),
 								descripcion: formData.get("descripcion"),
@@ -716,9 +734,9 @@
 					reportData = filteredData.map((item) => ({
 						id_ciclo: item.id_ciclo,
 						nombre: item.nombre,
-						novedad: item.novedad,
-						fecha_inicio: formatDate(item.fecha_inicio),
-						fecha_fin: formatDate(item.fecha_fin),
+						novedades: item.novedades || "Sin novedades",
+						fecha_inicio: formatDate(item.fecha_inicial),
+						fecha_fin: formatDate(item.fecha_final),
 						estado: item.estado,
 					}));
 
@@ -753,7 +771,7 @@
 					const data = reportData.map((item) => ({
 						ID: item.id_ciclo,
 						Nombre: item.nombre,
-						Novedades: item.novedad,
+						Novedades: item.novedades,
 						"Fecha Inicio": item.fecha_inicio,
 						"Fecha Fin": item.fecha_fin,
 						Estado: item.estado,
@@ -779,10 +797,10 @@
 					const columns = [
 						{ header: "ID", key: "id_ciclo" },
 						{ header: "Nombre", key: "nombre" },
-						{ header: "Novedades", key: "novedad" },
+						{ header: "Novedades", key: "novedades" },
 						{ header: "Fecha Inicio", key: "fecha_inicio" },
 						{ header: "Fecha Fin", key: "fecha_fin" },
-						{ header: "Estado", key: "estado" },
+						{ label: "Estado", key: "estado" },
 					];
 
 					if (exportToPDF(reportData, columns, "Reporte_Ciclos")) {

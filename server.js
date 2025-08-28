@@ -39,6 +39,16 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Accept'],
     credentials: true
 }));
+
+// Add logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  if (req.method === 'POST' || req.method === 'PUT') {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));

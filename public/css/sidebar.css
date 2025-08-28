@@ -22,25 +22,35 @@
 .section__nav {
 	display: flex;
 	align-items: center;
-	gap: 1rem;
-	padding: 0.7rem 0.5rem;
+	gap: 0.8rem;
+	padding: 0.6rem 0.8rem;
 	border-radius: 8px;
 	cursor: pointer;
-	transition: background 0.2s;
+	transition: all 0.2s ease;
+	margin-bottom: 0.3rem;
 }
 .section__nav:hover {
-	background: #f0f0f0;
+	background: var(--primary-green-light);
+	transform: translateX(5px);
 }
 .section__image-slider {
-	width: 2rem;
-	height: 2rem;
+	width: 1.5rem;
+	height: 1.5rem;
 	object-fit: contain;
 }
-.section__title {
-	font-size: 1.5rem;
+.section__sidebar .section__title {
+	font-size: 0.9rem;
 	font-weight: 500;
 	margin: 0;
+	color: #333;
 }
+
+/* Asegurar que los títulos de página principal mantengan su tamaño */
+.section__header .section__title {
+	font-size: 1.5rem !important;
+	color: var(--primary-green-dark);
+}
+
 body.sidebar-active {
 	overflow: hidden;
 }

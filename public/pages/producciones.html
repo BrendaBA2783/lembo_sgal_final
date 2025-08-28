@@ -7,6 +7,29 @@
 		<link rel="stylesheet" href="../css/styles.css" />
 		<link rel="stylesheet" href="../css/variables.css">
 		<link rel="stylesheet" href="../css/sidebar.css">
+		<style>
+			.btn--small {
+				padding: 0.3rem 0.6rem;
+				font-size: 0.8rem;
+				margin-top: 0.5rem;
+			}
+			.form__help {
+				font-size: 0.75rem;
+				color: #666;
+				margin-top: 0.25rem;
+				display: block;
+			}
+			.form__group select[multiple] {
+				min-height: 100px;
+			}
+			.action-btn--insumo {
+				background-color: #ff9800;
+				color: white;
+			}
+			.action-btn--insumo:hover {
+				background-color: #f57c00;
+			}
+		</style>
 		<script src="../components/sidebar.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 		<!-- Export Libraries -->
@@ -53,14 +76,22 @@
 							</select>
 						</div>
 						<div class="form__group">
-							<select id="filterType" class="form__select">
-								<option value="">Todos los tipos</option>
-								<option value="hortalizas">Hortalizas</option>
-								<option value="frutas">Frutas</option>
-								<option value="cereales">Cereales</option>
-								<option value="legumbres">Legumbres</option>
-								<option value="otro">Otro</option>
+							<select id="filterCultivo" class="form__select">
+								<option value="">Todos los cultivos</option>
 							</select>
+						</div>
+						<div class="form__group">
+							<select id="filterCiclo" class="form__select">
+								<option value="">Todos los ciclos</option>
+							</select>
+						</div>
+						<div class="form__group">
+							<label for="filterDateFrom" class="form__label">Desde</label>
+							<input type="date" id="filterDateFrom" class="form__input" />
+						</div>
+						<div class="form__group">
+							<label for="filterDateTo" class="form__label">Hasta</label>
+							<input type="date" id="filterDateTo" class="form__input" />
 						</div>
 						<button id="applyFilterBtn" class="btn btn--primary">
 							Aplicar Filtros
@@ -73,12 +104,13 @@
 					<table class="table">
 						<thead class="table__header">
 							<tr>
-								<th>ID</th>
+								<th>Identificador</th>
 								<th>Nombre</th>
-								<th>Tipo</th>
-								<th>Cantidad</th>
-								<th>Unidad</th>
-								<th>Fecha Cosecha</th>
+								<th>Responsable</th>
+								<th>Cultivo</th>
+								<th>Ciclo</th>
+								<th>Fecha Inicio</th>
+								<th>Fecha Fin</th>
 								<th>Estado</th>
 								<th>Acciones</th>
 							</tr>
@@ -105,44 +137,65 @@
 						<form id="produccionForm" class="form form--grid">
 							<div class="form__row">
 								<div class="form__group">
-									<label for="nombre" class="form__label">Nombre de la Producción *</label>
-									<input type="text" id="nombre" name="nombre" class="form__input" required />
+									<label for="identificador" class="form__label">Identificador de Producción *</label>
+									<input type="text" id="identificador" name="identificador" class="form__input" readonly />
+									<small class="form__help">Se genera automáticamente</small>
 								</div>
 								<div class="form__group">
-									<label for="tipo" class="form__label">Tipo de Producción *</label>
-									<select id="tipo" name="tipo" class="form__select" required>
-										<option value="">Seleccione un tipo</option>
-										<option value="hortalizas">Hortalizas</option>
-										<option value="frutas">Frutas</option>
-										<option value="cereales">Cereales</option>
-										<option value="legumbres">Legumbres</option>
-										<option value="otro">Otro</option>
+									<label for="responsable" class="form__label">Responsable *</label>
+									<select id="responsable" name="responsable" class="form__select" required>
+										<option value="">Seleccione un responsable</option>
 									</select>
+									<button type="button" id="addResponsableBtn" class="btn btn--secondary btn--small">+ Agregar Usuario</button>
 								</div>
 							</div>
 							<div class="form__row">
 								<div class="form__group">
-									<label for="cantidad" class="form__label">Cantidad *</label>
-									<input type="number" id="cantidad" name="cantidad" class="form__input" required />
+									<label for="nombre" class="form__label">Nombre de Producción *</label>
+									<input type="text" id="nombre" name="nombre" class="form__input" required minlength="3" maxlength="100" />
+									<small class="form__help">Mínimo 3, máximo 100 caracteres. Debe contener al menos una letra.</small>
 								</div>
 								<div class="form__group">
-									<label for="unidad" class="form__label">Unidad de Medida *</label>
-									<select id="unidad" name="unidad" class="form__select" required>
-										<option value="">Seleccione una unidad</option>
-										<option value="kg">Kilogramos (kg)</option>
-										<option value="g">Gramos (g)</option>
-										<option value="ton">Toneladas (ton)</option>
-										<option value="unidades">Unidades (u)</option>
-										<option value="docenas">Docenas</option>
-										<option value="cajas">Cajas</option>
-										<option value="otro">Otro</option>
+									<label for="cultivo" class="form__label">Cultivo *</label>
+									<select id="cultivo" name="cultivo" class="form__select" required>
+										<option value="">Seleccione un cultivo</option>
 									</select>
+									<button type="button" id="addCultivoBtn" class="btn btn--secondary btn--small">+ Agregar Cultivo</button>
 								</div>
 							</div>
 							<div class="form__row">
 								<div class="form__group">
-									<label for="fecha_cosecha" class="form__label">Fecha de Cosecha *</label>
-									<input type="date" id="fecha_cosecha" name="fecha_cosecha" class="form__input" required />
+									<label for="ciclo_cultivo" class="form__label">Ciclo de Cultivo *</label>
+									<select id="ciclo_cultivo" name="ciclo_cultivo" class="form__select" required>
+										<option value="">Seleccione un ciclo</option>
+									</select>
+									<button type="button" id="addCicloBtn" class="btn btn--secondary btn--small">+ Agregar Ciclo</button>
+								</div>
+								<div class="form__group">
+									<label for="sensores" class="form__label">Sensores * (Máx. 3)</label>
+									<select id="sensores" name="sensores" class="form__select" multiple required>
+										<option value="">Seleccione sensores</option>
+									</select>
+									<button type="button" id="addSensorBtn" class="btn btn--secondary btn--small">+ Agregar Sensor</button>
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="insumos" class="form__label">Insumos *</label>
+									<select id="insumos" name="insumos" class="form__select" multiple required>
+										<option value="">Seleccione insumos</option>
+									</select>
+									<button type="button" id="addInsumoBtn" class="btn btn--secondary btn--small">+ Agregar Insumo</button>
+								</div>
+								<div class="form__group">
+									<label for="fecha_inicio" class="form__label">Fecha de Inicio *</label>
+									<input type="date" id="fecha_inicio" name="fecha_inicio" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="fecha_fin" class="form__label">Fecha de Fin Estimada *</label>
+									<input type="date" id="fecha_fin" name="fecha_fin" class="form__input" required />
 								</div>
 								<div class="form__group">
 									<label for="estado" class="form__label">Estado</label>
@@ -160,7 +213,8 @@
 							</div>
 							<div class="form__actions">
 								<button type="button" class="btn modal__cancel">Cancelar</button>
-								<button type="submit" class="btn btn--primary">Guardar</button>
+								<button type="button" id="saveDraftBtn" class="btn btn--secondary">Guardar Borrador</button>
+								<button type="submit" id="saveProduccionBtn" class="btn btn--primary" disabled>Crear Producción</button>
 							</div>
 						</form>
 					</div>
@@ -176,6 +230,64 @@
 					</div>
 					<div class="modal__body" id="produccionDetails">
 						<!-- Los detalles de la producción se cargarán aquí dinámicamente -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal para uso de insumos -->
+			<div id="usoInsumoModal" class="modal">
+				<div class="modal__content">
+					<div class="modal__header">
+						<h3 class="modal__title">Registrar Uso de Insumo</h3>
+						<span class="modal__close">&times;</span>
+					</div>
+					<div class="modal__body">
+						<form id="usoInsumoForm" class="form form--grid">
+							<div class="form__row">
+								<div class="form__group">
+									<label for="insumo_uso" class="form__label">Insumo *</label>
+									<select id="insumo_uso" name="insumo_uso" class="form__select" required>
+										<option value="">Seleccione un insumo</option>
+									</select>
+								</div>
+								<div class="form__group">
+									<label for="fecha_uso" class="form__label">Fecha de Uso *</label>
+									<input type="date" id="fecha_uso" name="fecha_uso" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="cantidad_uso" class="form__label">Cantidad *</label>
+									<input type="number" id="cantidad_uso" name="cantidad_uso" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="responsable_uso" class="form__label">Responsable *</label>
+									<select id="responsable_uso" name="responsable_uso" class="form__select" required>
+										<option value="">Seleccione responsable</option>
+									</select>
+								</div>
+							</div>
+							<div class="form__row">
+								<div class="form__group">
+									<label for="valor_unitario_uso" class="form__label">Valor Unitario *</label>
+									<input type="number" id="valor_unitario_uso" name="valor_unitario_uso" class="form__input" required />
+								</div>
+								<div class="form__group">
+									<label for="valor_total_uso" class="form__label">Valor Total *</label>
+									<input type="number" id="valor_total_uso" name="valor_total_uso" class="form__input" required />
+								</div>
+							</div>
+							<div class="form__row form__row--full">
+								<div class="form__group">
+									<label for="observaciones_uso" class="form__label">Observaciones</label>
+									<textarea id="observaciones_uso" name="observaciones_uso" class="form__textarea"></textarea>
+								</div>
+							</div>
+							<div class="form__actions">
+								<button type="button" class="btn modal__cancel">Cancelar</button>
+								<button type="submit" class="btn btn--primary">Guardar Uso</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			</div>
@@ -198,14 +310,15 @@
 								</select>
 							</div>
 							<div class="form__group">
-								<label for="reportTypeSelect" class="form__label">Filtrar por Tipo</label>
-								<select id="reportTypeSelect" class="form__select">
-									<option value="">Todos los tipos</option>
-									<option value="hortalizas">Hortalizas</option>
-									<option value="frutas">Frutas</option>
-									<option value="cereales">Cereales</option>
-									<option value="legumbres">Legumbres</option>
-									<option value="otro">Otro</option>
+								<label for="reportCultivoSelect" class="form__label">Filtrar por Cultivo</label>
+								<select id="reportCultivoSelect" class="form__select">
+									<option value="">Todos los cultivos</option>
+								</select>
+							</div>
+							<div class="form__group">
+								<label for="reportCicloSelect" class="form__label">Filtrar por Ciclo</label>
+								<select id="reportCicloSelect" class="form__select">
+									<option value="">Todos los ciclos</option>
 								</select>
 							</div>
 							<button id="generateReportDataBtn" class="btn btn--primary">
@@ -219,7 +332,8 @@
 								<p>Total Producciones: <span id="totalProducciones">0</span></p>
 								<p>Producciones Activas: <span id="produccionesActivas">0</span></p>
 								<p>Producciones Inactivas: <span id="produccionesInactivas">0</span></p>
-								<p>Total Cantidad: <span id="totalCantidad">0</span></p>
+								<p>Total Inversión: <span id="totalInversion">$0</span></p>
+								<p>Total Meta: <span id="totalMeta">$0</span></p>
 							</div>
 
 							<div class="report-actions">
@@ -241,6 +355,12 @@
 			const API_BASE_URL = "http://localhost:3000/api";
 			const API_ENDPOINTS = {
 				producciones: `${API_BASE_URL}/producciones`,
+				usuarios: `${API_BASE_URL}/usuarios`,
+				cultivos: `${API_BASE_URL}/cultivos`,
+				ciclos: `${API_BASE_URL}/ciclos`,
+				sensores: `${API_BASE_URL}/sensores`,
+				insumos: `${API_BASE_URL}/insumos`,
+				usoInsumos: `${API_BASE_URL}/uso-insumos`,
 			};
 
 			// Utility function to make API requests
@@ -270,6 +390,7 @@
 
 			// Global state
 			let currentProduccion = null;
+			let currentProduccionId = null;
 			let isLoading = false;
 			let currentPage = 1;
 			const itemsPerPage = 10;
@@ -286,12 +407,128 @@
 				modal.classList.remove("modal--open");
 			}
 
+			// Generar identificador automático de producción
+			function generateProduccionId() {
+				const now = new Date();
+				const day = String(now.getDate()).padStart(2, '0');
+				const month = String(now.getMonth() + 1).padStart(2, '0');
+				const year = now.getFullYear();
+				const sequence = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+				return `PROD-${day}${month}${year}-${sequence}`;
+			}
+
+			// Validar nombre de producción
+			function validateProduccionName(name) {
+				if (!name || name.length < 3 || name.length > 100) return false;
+				// Debe contener al menos una letra
+				return /[a-zA-Z]/.test(name);
+			}
+
 			// Estado global y funciones principales
 			async function getProducciones() {
 				return apiRequest(API_ENDPOINTS.producciones);
 			}
 
+			// Cargar datos para los selectores
+			async function loadSelectorsData() {
+				try {
+					// Cargar usuarios
+					const usuarios = await apiRequest(API_ENDPOINTS.usuarios);
+					const responsableSelect = document.getElementById('responsable');
+					const responsableUsoSelect = document.getElementById('responsable_uso');
+					
+					usuarios.forEach(usuario => {
+						if (usuario.estado === 'activo') {
+							const option = new Option(usuario.nombre, usuario.id);
+							responsableSelect.add(option.cloneNode(true));
+							responsableUsoSelect.add(option);
+						}
+					});
+
+					// Cargar cultivos
+					const cultivos = await apiRequest(API_ENDPOINTS.cultivos);
+					const cultivoSelect = document.getElementById('cultivo');
+					const filterCultivoSelect = document.getElementById('filterCultivo');
+					const reportCultivoSelect = document.getElementById('reportCultivoSelect');
+					
+					cultivos.forEach(cultivo => {
+						if (cultivo.estado === 'activo') {
+							const option = new Option(cultivo.nombre, cultivo.id);
+							cultivoSelect.add(option.cloneNode(true));
+							filterCultivoSelect.add(option.cloneNode(true));
+							reportCultivoSelect.add(option);
+						}
+					});
+
+					// Cargar ciclos
+					const ciclos = await apiRequest(API_ENDPOINTS.ciclos);
+					const cicloSelect = document.getElementById('ciclo_cultivo');
+					const filterCicloSelect = document.getElementById('filterCiclo');
+					const reportCicloSelect = document.getElementById('reportCicloSelect');
+					
+					ciclos.forEach(ciclo => {
+						if (ciclo.estado === 'activo') {
+							const option = new Option(ciclo.nombre, ciclo.id);
+							cicloSelect.add(option.cloneNode(true));
+							filterCicloSelect.add(option.cloneNode(true));
+							reportCicloSelect.add(option);
+						}
+					});
+
+					// Cargar sensores
+					const sensores = await apiRequest(API_ENDPOINTS.sensores);
+					const sensoresSelect = document.getElementById('sensores');
+					
+					sensores.forEach(sensor => {
+						if (sensor.estado === 'activo') {
+							const option = new Option(sensor.nombre, sensor.id);
+							sensoresSelect.add(option);
+						}
+					});
+
+					// Cargar insumos
+					const insumos = await apiRequest(API_ENDPOINTS.insumos);
+					const insumosSelect = document.getElementById('insumos');
+					const insumoUsoSelect = document.getElementById('insumo_uso');
+					
+					insumos.forEach(insumo => {
+						if (insumo.estado === 'activo') {
+							const option = new Option(insumo.nombre, insumo.id);
+							insumosSelect.add(option.cloneNode(true));
+							insumoUsoSelect.add(option);
+						}
+					});
+
+				} catch (error) {
+					console.error('Error loading selectors data:', error);
+					showAlert('Error al cargar datos de los selectores', 'error');
+				}
+			}
+
 			async function createProduccion(produccionData) {
+				// Validar campos obligatorios
+				if (!produccionData.nombre || !produccionData.responsable || !produccionData.cultivo || 
+					!produccionData.ciclo_cultivo || !produccionData.sensores || !produccionData.insumos) {
+					throw new Error('Todos los campos obligatorios deben estar completos');
+				}
+
+				// Validar nombre de producción
+				if (!validateProduccionName(produccionData.nombre)) {
+					throw new Error('El nombre de producción debe tener entre 3 y 100 caracteres y contener al menos una letra');
+				}
+
+				// Validar sensores (máximo 3)
+				if (produccionData.sensores.length > 3) {
+					throw new Error('Se pueden seleccionar máximo 3 sensores');
+				}
+
+				// Validar fechas
+				const fechaInicio = new Date(produccionData.fecha_inicio);
+				const fechaFin = new Date(produccionData.fecha_fin);
+				if (fechaFin <= fechaInicio) {
+					throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
+				}
+
 				return apiRequest(API_ENDPOINTS.producciones, {
 					method: "POST",
 					body: JSON.stringify(produccionData),
@@ -308,6 +545,13 @@
 			async function deleteProduccionById(id) {
 				return apiRequest(`${API_ENDPOINTS.producciones}/${id}`, {
 					method: "DELETE",
+				});
+			}
+
+			async function createUsoInsumo(usoInsumoData) {
+				return apiRequest(API_ENDPOINTS.usoInsumos, {
+					method: "POST",
+					body: JSON.stringify(usoInsumoData),
 				});
 			}
 
@@ -573,6 +817,9 @@
 							<button class="action-btn action-btn--edit" data-id="${produccion.id}" title="Editar producción">
 								<span class="material-icons">edit</span>
 							</button>
+							<button class="action-btn action-btn--insumo" data-id="${produccion.id}" title="Registrar uso de insumo">
+								<span class="material-icons">inventory</span>
+							</button>
 							<button class="action-btn ${produccion.estado === "activo" ? "action-btn--disable" : "action-btn--enable"}" 
 									data-id="${produccion.id}"
 									title="${produccion.estado === "activo" ? "Deshabilitar" : "Habilitar"} producción">
@@ -765,7 +1012,8 @@
 			}
 
 			// Initialize page
-			document.addEventListener("DOMContentLoaded", () => {
+			document.addEventListener("DOMContentLoaded", async () => {
+				await loadSelectorsData();
 				initProduccionesPage();
 			});
 
@@ -807,11 +1055,47 @@
 					addActionButtonListeners();
 				};
 
+				// Función para agregar listeners a los botones de acción
+				function addActionButtonListeners() {
+					// Botones de editar
+					document.querySelectorAll('.action-btn--edit').forEach(btn => {
+						btn.addEventListener('click', (e) => {
+							const id = e.currentTarget.dataset.id;
+							editProduccion(id);
+						});
+					});
+
+					// Botones de uso de insumos
+					document.querySelectorAll('.action-btn--insumo').forEach(btn => {
+						btn.addEventListener('click', (e) => {
+							const id = e.currentTarget.dataset.id;
+							openUsoInsumoModal(id);
+						});
+					});
+
+					// Botones de habilitar/deshabilitar
+					document.querySelectorAll('.action-btn--disable, .action-btn--enable').forEach(btn => {
+						btn.addEventListener('click', (e) => {
+							const id = e.currentTarget.dataset.id;
+							toggleProduccionStatus(id);
+						});
+					});
+				}
+
+				// Función para abrir modal de uso de insumos
+				function openUsoInsumoModal(produccionId) {
+					currentProduccionId = produccionId;
+					document.getElementById('usoInsumoModal').classList.add('modal--open');
+				}
+
 				// Apply filters
 				async function applyFilters() {
 					const searchTerm = searchInput.value.toLowerCase();
 					const statusFilter = filterStatus.value;
-					const typeFilter = filterType.value;
+					const cultivoFilter = document.getElementById('filterCultivo').value;
+					const cicloFilter = document.getElementById('filterCiclo').value;
+					const dateFromFilter = document.getElementById('filterDateFrom').value;
+					const dateToFilter = document.getElementById('filterDateTo').value;
 
 					try {
 						const producciones = await apiRequest(API_ENDPOINTS.producciones);
@@ -819,15 +1103,26 @@
 							const matchesSearch =
 								searchTerm === "" ||
 								produccion.nombre.toLowerCase().includes(searchTerm) ||
-								produccion.id.toString().includes(searchTerm);
+								produccion.identificador.toLowerCase().includes(searchTerm);
 							
 							const matchesStatus =
 								statusFilter === "" || produccion.estado === statusFilter;
 							
-							const matchesType =
-								typeFilter === "" || produccion.tipo === typeFilter;
+							const matchesCultivo =
+								cultivoFilter === "" || produccion.cultivo === cultivoFilter;
+							
+							const matchesCiclo =
+								cicloFilter === "" || produccion.ciclo_cultivo === cicloFilter;
 
-							return matchesSearch && matchesStatus && matchesType;
+							let matchesDate = true;
+							if (dateFromFilter && dateToFilter) {
+								const fechaInicio = new Date(produccion.fecha_inicio);
+								const fromDate = new Date(dateFromFilter);
+								const toDate = new Date(dateToFilter);
+								matchesDate = fechaInicio >= fromDate && fechaInicio <= toDate;
+							}
+
+							return matchesSearch && matchesStatus && matchesCultivo && matchesCiclo && matchesDate;
 						});
 
 						currentPage = 1;
@@ -843,7 +1138,10 @@
 				function resetFilters() {
 					searchInput.value = "";
 					filterStatus.value = "";
-					filterType.value = "";
+					document.getElementById('filterCultivo').value = "";
+					document.getElementById('filterCiclo').value = "";
+					document.getElementById('filterDateFrom').value = "";
+					document.getElementById('filterDateTo').value = "";
 					loadProducciones();
 				}
 
@@ -852,11 +1150,104 @@
 				resetFilterBtn.addEventListener("click", resetFilters);
 				searchInput.addEventListener("keyup", applyFilters);
 				filterStatus.addEventListener("change", applyFilters);
-				filterType.addEventListener("change", applyFilters);
+				document.getElementById('filterCultivo').addEventListener("change", applyFilters);
+				document.getElementById('filterCiclo').addEventListener("change", applyFilters);
+				document.getElementById('filterDateFrom').addEventListener("change", applyFilters);
+				document.getElementById('filterDateTo').addEventListener("change", applyFilters);
 
 				// Event listeners
 				modalCancel.addEventListener("click", () => closeModal(produccionModal));
 				produccionForm.addEventListener("submit", handleProduccionFormSubmit);
+				
+				// Modal de uso de insumos
+				const usoInsumoModal = document.getElementById('usoInsumoModal');
+				const usoInsumoForm = document.getElementById('usoInsumoForm');
+				const usoInsumoModalClose = usoInsumoModal.querySelector('.modal__close');
+				const usoInsumoModalCancel = usoInsumoModal.querySelector('.modal__cancel');
+
+				usoInsumoModalClose.addEventListener("click", () => {
+					usoInsumoForm.reset();
+					closeModal(usoInsumoModal);
+				});
+
+				usoInsumoModalCancel.addEventListener("click", () => {
+					usoInsumoForm.reset();
+					closeModal(usoInsumoModal);
+				});
+
+				usoInsumoForm.addEventListener("submit", handleUsoInsumoFormSubmit);
+				
+				// Calcular automáticamente el valor total
+				document.getElementById('cantidad_uso').addEventListener('input', calculateTotal);
+				document.getElementById('valor_unitario_uso').addEventListener('input', calculateTotal);
+				
+				function calculateTotal() {
+					const cantidad = parseFloat(document.getElementById('cantidad_uso').value) || 0;
+					const valorUnitario = parseFloat(document.getElementById('valor_unitario_uso').value) || 0;
+					const valorTotal = cantidad * valorUnitario;
+					document.getElementById('valor_total_uso').value = valorTotal.toFixed(2);
+				}
+				
+				// Función para manejar el formulario de uso de insumos
+				async function handleUsoInsumoFormSubmit(event) {
+					event.preventDefault();
+					
+					const formData = new FormData(usoInsumoForm);
+					const usoInsumoData = {
+						produccion_id: currentProduccionId,
+						insumo_id: formData.get('insumo_uso'),
+						fecha_uso: formData.get('fecha_uso'),
+						cantidad: parseFloat(formData.get('cantidad_uso')),
+						responsable_id: formData.get('responsable_uso'),
+						valor_unitario: parseFloat(formData.get('valor_unitario_uso')),
+						valor_total: parseFloat(formData.get('valor_total_uso')),
+						observaciones: formData.get('observaciones_uso')
+					};
+
+					try {
+						await createUsoInsumo(usoInsumoData);
+						showAlert('Uso de insumo registrado exitosamente', 'success');
+						usoInsumoForm.reset();
+						closeModal(usoInsumoModal);
+					} catch (error) {
+						console.error('Error creating uso insumo:', error);
+						showAlert('Error al registrar uso de insumo', 'error');
+					}
+				}
+				
+				// Botón guardar borrador
+				document.getElementById('saveDraftBtn').addEventListener("click", () => {
+					handleProduccionFormSubmit(new Event('submit'), true); // true = es borrador
+				});
+
+				// Validación en tiempo real del formulario
+				const formInputs = produccionForm.querySelectorAll('input, select, textarea');
+				formInputs.forEach(input => {
+					input.addEventListener('input', validateForm);
+					input.addEventListener('change', validateForm);
+				});
+
+				// Función de validación del formulario
+				function validateForm() {
+					const nombre = document.getElementById('nombre').value;
+					const responsable = document.getElementById('responsable').value;
+					const cultivo = document.getElementById('cultivo').value;
+					const cicloCultivo = document.getElementById('ciclo_cultivo').value;
+					const sensores = Array.from(document.getElementById('sensores').selectedOptions).map(opt => opt.value);
+					const insumos = Array.from(document.getElementById('insumos').selectedOptions).map(opt => opt.value);
+					const fechaInicio = document.getElementById('fecha_inicio').value;
+					const fechaFin = document.getElementById('fecha_fin').value;
+
+					const isValid = nombre && responsable && cultivo && cicloCultivo && 
+								   sensores.length > 0 && insumos.length > 0 && 
+								   fechaInicio && fechaFin && 
+								   validateProduccionName(nombre) && 
+								   sensores.length <= 3 &&
+								   new Date(fechaFin) > new Date(fechaInicio);
+
+					document.getElementById('saveProduccionBtn').disabled = !isValid;
+					return isValid;
+				}
 				newProduccionBtn.addEventListener("click", () => {
 					currentProduccion = null;
 					modalTitle.textContent = "Nueva Producción";
@@ -893,3 +1284,4 @@
 		</script>
 	</body>
 </html>
+
